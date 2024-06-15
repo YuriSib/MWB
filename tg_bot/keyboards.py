@@ -24,6 +24,11 @@ keys = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
+pay_tokens = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Ввод ключа', callback_data='Ввод_ключа')],
+    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
+])
+
 category = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Введите номер категории из списка', callback_data='Ввод_категории')],
     [InlineKeyboardButton(text='На категорию вверх', callback_data='На_категорию_вверх')],

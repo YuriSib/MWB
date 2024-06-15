@@ -85,8 +85,8 @@ async def add_key_link(key_link, discount):
 
 
 async def check_user(tg_id):
-    async with aiosqlite.connect('../users.db') as db:
-        result = await db.execute_fetchall("SELECT * FROM users WHERE tg_id = ?", (tg_id,))
+    async with aiosqlite.connect('../users.db') as conn:
+        result = await conn.execute_fetchall("SELECT * FROM users WHERE tg_id = ?", (tg_id,))
     return bool(result)
 
 
@@ -99,10 +99,26 @@ async def add_user(name, tg_id):
         await conn.commit()
 
 
+async def get_token(tg_id):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        result = await conn.execute_fetchall("SELECT * FROM keys WHERE user_id = ?", (tg_id,))
+        return result
+
+
+async def delete_token(token_id):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        await conn.execute('''DELETE FROM keys WHERE id = ?''', (token_id,))
+        await conn.commit()
+
+
 if __name__ == "__main__":
     product_id_ = 12345
     current_time = datetime.now().strftime('%d-%m-%Y')
+    tg_id = 674796107
 
-    asyncio.run(add_product(product_id_, current_time, 2545670))
+    # asyncio.run(add_product(product_id_, current_time, 2545670))
+    print(asyncio.run(get_token(tg_id)))
     # # update_product(123456, 170)
-    print(asyncio.run(get_product(product_id_)))
+    # print(asyncio.run(get_product(product_id_)))

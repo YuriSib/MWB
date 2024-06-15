@@ -6,6 +6,7 @@ from aiogram.fsm.state import StatesGroup, State
 from config import BOT_TOKEN
 import keyboards as kb
 from DB import sqlite_comands as sql
+import bot_utilits as ut
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -37,9 +38,8 @@ async def save_name(callback: CallbackQuery, state: FSMContext):
     name = callback.text
 
     print("Пользователь зарегестрировался!", callback.from_user.id, callback.chat.full_name)
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await sql.add_user(name, callback.from_user.id)
-    await callback.bot.send_message(chat_id=callback.chat.id, text=f'{name}, вы успешно авторизовались!',
+    await callback.bot.send_message(chat_id=callback.chat.id, text=f'{name}, вы успешно зарегестрировались!',
                                     reply_markup=kb.main_menu)
 
 
@@ -53,12 +53,34 @@ async def personal_cabinet(callback: CallbackQuery, bot):
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Мои_токены'))
 async def tokens(callback: CallbackQuery, bot):
     """Тут будет функция, которая направит запрос в БД и вернет список токенов пользователя и срок их действия"""
+    keys_data = await sql.get_token(callback.from_user.id)
+
+    day_list = []
+    for key in keys_data:
+        q_days = await ut.subs_calculation(date=key[4], q_day=int(key[5]))
+        if type(q_days) is int:
+            day_list.append(q_days)
+        else:
+            await sql.delete_token(key[0])
+
     # 5 дней: 2 токена, 8 дней: 2 токена
-    tokens = {5: 2, 8: 2}
-    to_text = [f'{q_tokens} токен(а) сроком действия по {day} дней' for day, q_tokens in tokens.items()]
-    text = f'У вас осталось {", ".join(to_text)}.'
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text=text, reply_markup=kb.main_menu)
+    # tokens = {5: 2, 8: 2}
+    tokens = {}
+    if day_list:
+        for q_day in day_list:
+            if q_day in tokens:
+                tokens[q_day] = int(tokens[q_day]) + int(q_day)
+            else:
+                tokens[q_day] = 1
+
+        to_text = [f'{q_tokens} токен(а) сроком действия {day} дней' for day, q_tokens in tokens.items()]
+        text = f'У вас осталось {", ".join(to_text)}.'
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await bot.send_message(chat_id=callback.from_user.id, text=text, reply_markup=kb.main_menu)
+    else:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text='В данный момент у вас нет токенов. Нажмите, приобретите один или несколько.',
+                               reply_markup=kb.main_menu)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Купить_токены'))
@@ -70,6 +92,7 @@ async def menu(callback: CallbackQuery, bot):
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Ключи'))
 async def menu(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=kb.keys)
 
 
