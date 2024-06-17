@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
@@ -18,6 +20,13 @@ async def step1(message: Message):
         await message.answer('Выберите подходящий пункт:', reply_markup=kb.main_menu)
     else:
         await message.answer('Вам необходимо загерестрироваться:', reply_markup=kb.registration)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Главное_меню'))
+async def personal_cabinet(callback: CallbackQuery, bot):
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
+                           reply_markup=kb.personal_cabinet)
 
 
 class UserName(StatesGroup):
@@ -57,7 +66,7 @@ async def tokens(callback: CallbackQuery, bot):
 
     day_list = []
     for key in keys_data:
-        q_days = await ut.subs_calculation(date=key[4], q_day=int(key[5]))
+        q_days = await ut.subs_calculation(date=key[5], q_day=int(key[6]))
         if type(q_days) is int:
             day_list.append(q_days)
         else:
@@ -69,30 +78,88 @@ async def tokens(callback: CallbackQuery, bot):
     if day_list:
         for q_day in day_list:
             if q_day in tokens:
-                tokens[q_day] = int(tokens[q_day]) + int(q_day)
+                tokens[q_day] = int(tokens[q_day]) + 1
             else:
                 tokens[q_day] = 1
 
         to_text = [f'{q_tokens} токен(а) сроком действия {day} дней' for day, q_tokens in tokens.items()]
-        text = f'У вас осталось {", ".join(to_text)}.'
+        text = f'У вас осталось {", ".join(to_text)}. \nВыберите токен, который вы хотели бы настроить.'
         await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-        await bot.send_message(chat_id=callback.from_user.id, text=text, reply_markup=kb.main_menu)
+
+        token_list = await sql.get_token(callback.from_user.id)
+        tokens_dict = {}
+        no_name_num = 0
+        for token_ in token_list:
+            if token_[1]:
+                tokens_dict[token_[0]] = token_[1]
+            else:
+                no_name_num += 1
+                tokens_dict[token_[0]] = f'Безымянный {no_name_num}'
+
+        await bot.send_message(chat_id=callback.from_user.id, text=text,
+                               reply_markup=await kb.token_keyboard(tokens_dict))
     else:
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
         await bot.send_message(chat_id=callback.from_user.id,
                                text='В данный момент у вас нет токенов. Нажмите, приобретите один или несколько.',
-                               reply_markup=kb.main_menu)
+                               reply_markup=kb.personal_cabinet)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Купить_токены'))
 async def menu(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Купите свежие токены!', reply_markup=kb.main_menu)
+    await bot.send_message(chat_id=callback.from_user.id, text='Купите свежие токены!', reply_markup=kb.pay_tokens)
 
 
-@router.callback_query(lambda callback_query: callback_query.data.startswith('Ключи'))
+class PayInfo(StatesGroup):
+    photo = State()
+    pay_option = State()
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('оплатить_'))
+async def waiting_to_pay(callback: CallbackQuery, state: FSMContext):
+    pay_option = {
+        'оплатить_1_на_7': (1, 7, 30), 'оплатить_3_на_7': (3, 7, 60),
+        'оплатить_1_на_14': (1, 14, 50), 'оплатить_3_на_14': (3, 14, 100),
+        'оплатить_1_на_30': (1, 30, 80), 'оплатить_3_на_30': (3, 30, 160),
+    }
+    token_params = pay_option[callback.data]
+    q_t, q_d, price = token_params[0], token_params[1], token_params[2]
+    await bot.send_message(chat_id=callback.from_user.id,
+                           text=f'Оплатите {token_params[2]}р. в течении 10 мин. и перешлите '
+                                f'Вы выбрали {q_t} токен(ов) на {q_d} дней. \n'
+                                f'Оплатите {price} рублей за подписку и пришлите скриншот чека, '
+                                f'после чего вам станут доступны преобретенные токены.',
+                           reply_markup=kb.pay_tokens)
+    await state.set_state(PayInfo.photo)
+    await state.update_data(pay_option=token_params)
+
+
+@router.message(PayInfo.photo)
+async def get_check(message: Message, state: FSMContext):
+    await state.update_data(photo=message.photo)
+    photo_id = message.photo[3].file_id
+
+    data = await state.get_data()
+    token_params = data['pay_option']
+    q_t, q_d, price = token_params[0], token_params[1], token_params[2]
+
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=f'Вы оплптили {q_t} токен(ов) на {q_d} дней!',
+                           reply_markup=kb.pay_tokens)
+
+    for i in range(1, token_params[0] + 1):
+        await sql.add_token(message.from_user.id, token_params[1])
+
+    for i in range(3):
+        await bot.send_message(chat_id=674796107, text=f'Пользователь оплатил {price}р.!', reply_markup=kb.pay_tokens)
+        await asyncio.sleep(1)
+    await bot.send_photo(chat_id=674796107, photo=photo_id)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('токен_'))
 async def menu(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=kb.keys)
 
 

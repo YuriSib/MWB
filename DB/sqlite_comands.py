@@ -25,6 +25,7 @@ async def check_db():
                         call_price INTEGER)''')
         await cursor.execute('''CREATE TABLE IF NOT EXISTS keys
                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        token_name TEXT,
                         key_link TEXT,
                         keyword TEXT,
                         discount INTEGER,
@@ -110,6 +111,15 @@ async def delete_token(token_id):
     await check_db()
     async with aiosqlite.connect('../users.db') as conn:
         await conn.execute('''DELETE FROM keys WHERE id = ?''', (token_id,))
+        await conn.commit()
+
+
+async def add_token(user_id, period):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        time = datetime.now().strftime('%d-%m-%Y')
+        await conn.execute("INSERT INTO keys (reg_time, subs_period, user_id) VALUES (?, ?, ?)",
+                           (time, period, user_id))
         await conn.commit()
 
 

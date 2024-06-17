@@ -72,11 +72,11 @@ async def wb_scrapper(lst_keyword: list[tuple]):
                             reg_time, primary_price = product_data[1], product_data[2]
                             discount_proc = ((primary_price/current_price)*100)-100
                             if discount_proc >= DISCOUNT_PROC:
-                                sql.add_to_favourites(product_id=product_id, reg_time=reg_time,
-                                                      primary_price=primary_price, call_price=current_price)
+                                await sql.add_to_favourites(product_id=product_id, reg_time=reg_time,
+                                                            primary_price=primary_price, call_price=current_price)
                                 send_message_to_user(old_price=primary_price, new_price=current_price, user_id=1234)
                         else:
-                            sql.add_product(product_id=product_id, reg_time=current_time, primary_price=current_price)
+                            await sql.add_product(product_id=product_id, reg_time=current_time, primary_price=current_price)
 
 
 if __name__ == "__main__":
