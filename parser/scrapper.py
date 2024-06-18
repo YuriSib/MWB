@@ -1,24 +1,30 @@
-import requests
 from datetime import datetime
 import random
 import time
-import aiohttp
 import asyncio
 
-import utilits as ut
+import parser.utilits as ut
 from DB import sqlite_comands as sql
-from tg_bot.message import send_message_to_user
 
 
-async def wb_scrapper(lst_keyword: list[tuple]):
-    while True:
+async def wb_scrapper(lst_keyword: list[tuple], user_id):
+    parsing_status = True
+    while parsing_status:
         current_keys_num = 1
         for row in lst_keyword:
+            if not parsing_status:
+                break
+            if not row[0] or not row[1]:
+                continue
+
             current_keys_num += 1
             KEY_WORD = row[0]
             DISCOUNT_PROC = row[1]
 
             for count_page in range(1, 5):
+                if not await sql.get_parsing_status(user_id):
+                    parsing_status = False
+                    break
                 try:
                     rand_proxy = await ut.random_proxy()
                 except Exception as e:
@@ -74,9 +80,9 @@ async def wb_scrapper(lst_keyword: list[tuple]):
                             if discount_proc >= DISCOUNT_PROC:
                                 await sql.add_to_favourites(product_id=product_id, reg_time=reg_time,
                                                             primary_price=primary_price, call_price=current_price)
-                                send_message_to_user(old_price=primary_price, new_price=current_price, user_id=1234)
                         else:
-                            await sql.add_product(product_id=product_id, reg_time=current_time, primary_price=current_price)
+                            await sql.add_product(product_id=product_id, reg_time=current_time,
+                                                  primary_price=current_price)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from config import BOT_TOKEN
 import keyboards as kb
 from DB import sqlite_comands as sql
 import bot_utilits as ut
+from parser.scrapper import wb_scrapper
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -145,7 +146,7 @@ async def get_check(message: Message, state: FSMContext):
     q_t, q_d, price = token_params[0], token_params[1], token_params[2]
 
     await bot.send_message(chat_id=message.from_user.id,
-                           text=f'Вы оплптили {q_t} токен(ов) на {q_d} дней!',
+                           text=f'Вы оплатили {q_t} токен(ов) на {q_d} дней!',
                            reply_markup=kb.pay_tokens)
 
     for i in range(1, token_params[0] + 1):
@@ -159,8 +160,89 @@ async def get_check(message: Message, state: FSMContext):
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('токен_'))
 async def menu(callback: CallbackQuery, bot):
+    token_id = int(callback.data.replace('токен_', ''))
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=kb.keys)
+    await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=await kb.key_editor(token_id))
+
+
+class KeyInfo(StatesGroup):
+    keyword = State()
+    token_id = State()
+    token_name = State()
+    discount = State()
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_ключ_'))
+async def keyword_input(callback: CallbackQuery, state: FSMContext):
+    token_id = int(callback.data.replace('Задать_ключ_', ''))
+
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Введите ключевое слово или фразу для поиска:')
+
+    await state.update_data(token_id=token_id)
+    await state.set_state(KeyInfo.keyword)
+
+
+@router.message(KeyInfo.keyword)
+async def keyword_edit(message: Message, state: FSMContext):
+    await state.update_data(keyword=message.text)
+
+    data = await state.get_data()
+    token_id = data['token_id']
+    await sql.update_key_word_link(token_id, word=message.text)
+
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=f'Ваше новое ключевое слова для этого токена: \n{message.text}.',
+                           reply_markup=await kb.key_editor(token_id))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Переименовать_токен_'))
+async def rename_token(callback: CallbackQuery, state: FSMContext):
+    token_id = int(callback.data.replace('Переименовать_токен_', ''))
+
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Введите новое название токена (не более 30 символов):')
+
+    await state.update_data(token_id=token_id)
+    await state.set_state(KeyInfo.token_name)
+
+
+@router.message(KeyInfo.token_name)
+async def keyword_edit(message: Message, state: FSMContext):
+    await state.update_data(token_name=message.text)
+
+    data = await state.get_data()
+    token_id = data['token_id']
+
+    await sql.update_token_name(token_id, message.text)
+
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=f'Ваше новое название для этого токена: \n{message.text}.',
+                           reply_markup=await kb.key_editor(token_id))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_скидку_'))
+async def rename_token(callback: CallbackQuery, state: FSMContext):
+    token_id = int(callback.data.replace('Задать_скидку_', ''))
+
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Введите процент скидки числом, без дополнительных знаков:')
+
+    await state.update_data(token_id=token_id)
+    await state.set_state(KeyInfo.discount)
+
+
+@router.message(KeyInfo.discount)
+async def keyword_edit(message: Message, state: FSMContext):
+    await state.update_data(keyword=message.text)
+
+    data = await state.get_data()
+    token_id = data['token_id']
+
+    await sql.update_discount(token_id, message.text)
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=f'Ваша новая скидка для этого токена - {message.text}%',
+                           reply_markup=await kb.key_editor(token_id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Категории'))
@@ -169,13 +251,18 @@ async def menu(callback: CallbackQuery, bot):
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=kb.category)
 
 
-@router.callback_query(lambda callback_query: callback_query.data.startswith('Ввод_ключа'))
-async def menu(callback: CallbackQuery, bot):
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Введите ключ для поиска', reply_markup=kb.main_menu)
-
-
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Ввод_категории'))
 async def menu(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Список категорий', reply_markup=kb.main_menu)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Запустить_мониторинг'))
+async def menu(callback: CallbackQuery, bot):
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+
+    await sql.update_parsing_status(callback.from_user.id, True)
+    lst_keyword = await sql.get_list_keyword(callback.from_user.id)
+    await wb_scrapper(lst_keyword, callback.from_user.id)
+
+    await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен', reply_markup=kb.personal_cabinet_2)

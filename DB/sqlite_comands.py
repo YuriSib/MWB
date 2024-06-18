@@ -13,7 +13,8 @@ async def check_db():
         await cursor.execute('''CREATE TABLE IF NOT EXISTS users 
                         (tg_id INTEGER PRIMARY KEY, 
                         name TEXT, 
-                        reg_time TEXT)''')
+                        reg_time TEXT,
+                        parsing_status BOOL)''')
         await cursor.execute('''CREATE TABLE IF NOT EXISTS products
                         (product_id INTEGER PRIMARY KEY, 
                         reg_time TEXT,
@@ -72,17 +73,9 @@ async def return_to_prod(product_id, reg_time, primary_price):
     async with aiosqlite.connect('../users.db') as conn:
         cursor = await conn.cursor()
     await cursor.execute("INSERT INTO products (product_id, reg_time, primary_price) "
-                   "VALUES (?, ?, ?, ?)", (product_id, reg_time, primary_price))
+                         "VALUES (?, ?, ?)", (product_id, reg_time, primary_price))
     await cursor.execute('''DELETE FROM favourites_products WHERE id = ?''', (product_id,))
     await conn.commit()
-
-
-async def add_keyword(keyword, discount):
-    pass
-
-
-async def add_key_link(key_link, discount):
-    pass
 
 
 async def check_user(tg_id):
@@ -123,12 +116,57 @@ async def add_token(user_id, period):
         await conn.commit()
 
 
+async def update_key_word_link(token_id, word=None, link=None):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        if word:
+            await conn.execute(f"UPDATE keys SET keyword = '{word}' WHERE id = {token_id}")
+        else:
+            await conn.execute(f"UPDATE keys SET key_link = '{link}' WHERE id = {token_id}")
+        await conn.commit()
+
+
+async def update_token_name(token_id, name):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        await conn.execute(f"UPDATE keys SET token_name = '{name}' WHERE id = {token_id}")
+        await conn.commit()
+
+
+async def update_discount(token_id, discount):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        await conn.execute(f"UPDATE keys SET discount = '{discount}' WHERE id = {token_id}")
+        await conn.commit()
+
+
+async def update_parsing_status(tg_id, status):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        await conn.execute(f"UPDATE users SET parsing_status = '{status}' WHERE tg_id = {tg_id}")
+        await conn.commit()
+
+
+async def get_parsing_status(tg_id):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        result = await conn.execute_fetchall("SELECT parsing_status FROM users WHERE tg_id = ?", (tg_id,))
+        return result
+
+
+async def get_list_keyword(tg_id):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        result = await conn.execute_fetchall("SELECT keyword, discount FROM keys WHERE user_id = ?", (tg_id,))
+        return result
+
+
 if __name__ == "__main__":
     product_id_ = 12345
     current_time = datetime.now().strftime('%d-%m-%Y')
     tg_id = 674796107
 
-    # asyncio.run(add_product(product_id_, current_time, 2545670))
-    print(asyncio.run(get_token(tg_id)))
+    # asyncio.run(new_field('parsing_status'))
+    print(asyncio.run(get_list_keyword(tg_id)))
     # # update_product(123456, 170)
     # print(asyncio.run(get_product(product_id_)))
