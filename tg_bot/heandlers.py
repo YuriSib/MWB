@@ -5,11 +5,11 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from config import BOT_TOKEN
+from MWB.config import BOT_TOKEN
 import keyboards as kb
-from DB import sqlite_comands as sql
+from MWB.DB import sqlite_comands as sql
 import bot_utilits as ut
-from parser.scrapper import wb_scrapper
+from MWB.parser.scrapper import wb_scrapper
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -130,8 +130,7 @@ async def waiting_to_pay(callback: CallbackQuery, state: FSMContext):
                            text=f'Оплатите {token_params[2]}р. в течении 10 мин. и перешлите '
                                 f'Вы выбрали {q_t} токен(ов) на {q_d} дней. \n'
                                 f'Оплатите {price} рублей за подписку и пришлите скриншот чека, '
-                                f'после чего вам станут доступны преобретенные токены.',
-                           reply_markup=kb.pay_tokens)
+                                f'после чего вам станут доступны преобретенные токены.')
     await state.set_state(PayInfo.photo)
     await state.update_data(pay_option=token_params)
 
@@ -139,7 +138,7 @@ async def waiting_to_pay(callback: CallbackQuery, state: FSMContext):
 @router.message(PayInfo.photo)
 async def get_check(message: Message, state: FSMContext):
     await state.update_data(photo=message.photo)
-    photo_id = message.photo[3].file_id
+    photo_id = message.photo[2].file_id
 
     data = await state.get_data()
     token_params = data['pay_option']
@@ -153,7 +152,7 @@ async def get_check(message: Message, state: FSMContext):
         await sql.add_token(message.from_user.id, token_params[1])
 
     for i in range(3):
-        await bot.send_message(chat_id=674796107, text=f'Пользователь оплатил {price}р.!', reply_markup=kb.pay_tokens)
+        await bot.send_message(chat_id=674796107, text=f'Пользователь оплатил {price}р.!')
         await asyncio.sleep(1)
     await bot.send_photo(chat_id=674796107, photo=photo_id)
 

@@ -2,7 +2,7 @@ import aiohttp
 import random
 import json
 
-from config import PROXY_TOKEN
+from MWB.config import PROXY_TOKEN
 
 
 headers = {

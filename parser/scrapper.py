@@ -3,8 +3,8 @@ import random
 import time
 import asyncio
 
-import parser.utilits as ut
-from DB import sqlite_comands as sql
+import MWB.parser.utilits as ut
+from MWB.DB import sqlite_comands as sql
 
 
 async def wb_scrapper(lst_keyword: list[tuple], user_id):
@@ -69,10 +69,15 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
 
                         if product.get('price'):
                             current_price = float(product['price']['product'])/100
-                        else:
+                            print(f'''{product['name']} {product['id']}''')
+                        elif product['sizes'][0].get('price'):
                             current_price = float(product['sizes'][0]['price']['product'])/100
+                            print(f'''{product['name']} {product['id']}''')
+                        else:
+                            print(f'''Товар: {product['name']} {product['id']} не найден''')
+                            continue
 
-                        product_data = sql.get_product(product_id)
+                        product_data = await sql.get_product(product_id)
 
                         if product_data:
                             reg_time, primary_price = product_data[1], product_data[2]
@@ -87,5 +92,5 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
 
 if __name__ == "__main__":
     lst_keyword = [('Джинсы синие', 30), ('Кабачек', 30)]
-    asyncio.run(wb_scrapper(lst_keyword))
+    asyncio.run(wb_scrapper(lst_keyword, 674796107))
 
