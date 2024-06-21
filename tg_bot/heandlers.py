@@ -30,7 +30,7 @@ async def step1(message: Message):
 async def personal_cabinet(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
-                           reply_markup=kb.personal_cabinet)
+                           reply_markup=kb.cabinet_keyboard(callback.from_user.id))
 
 
 class UserName(StatesGroup):
@@ -60,7 +60,7 @@ async def save_name(callback: CallbackQuery, state: FSMContext):
 async def personal_cabinet(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
-                           reply_markup=kb.personal_cabinet)
+                           reply_markup=kb.cabinet_keyboard(callback.from_user.id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Мои_токены'))
@@ -106,7 +106,7 @@ async def tokens(callback: CallbackQuery, bot):
         await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
         await bot.send_message(chat_id=callback.from_user.id,
                                text='В данный момент у вас нет токенов. Нажмите, приобретите один или несколько.',
-                               reply_markup=kb.personal_cabinet)
+                               reply_markup=kb.cabinet_keyboard(callback.from_user.id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Купить_токены'))
@@ -271,5 +271,5 @@ async def menu(callback: CallbackQuery, bot):
     await sql.update_parsing_status(callback.from_user.id, True)
     lst_keyword = await sql.get_list_keyword(callback.from_user.id)
     await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен',
-                           reply_markup=kb.personal_cabinet)
+                           reply_markup=kb.cabinet_keyboard(callback.from_user.id))
     await wb_scrapper(lst_keyword, callback.from_user.id)

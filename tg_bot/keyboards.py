@@ -1,4 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from DB import sqlite_comands as sql
 
 
 registration = InlineKeyboardMarkup(inline_keyboard=[
@@ -56,6 +57,19 @@ percent = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Укажите процент', callback_data='Укажите_процент')],
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
+
+
+async def cabinet_keyboard(tg_id: int) -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
+         InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')]]
+    if sql.get_parsing_status(tg_id):
+        buttons.append([InlineKeyboardButton(text='Остановить мониторинг по всем ключам',
+                                             callback_data='Остановить_мониторинг')])
+    else:
+        buttons.append([InlineKeyboardButton(text='Запустить мониторинг по всем ключам',
+                                             callback_data='Запустить_мониторинг')])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 async def token_keyboard(tokens: dict) -> InlineKeyboardMarkup:
