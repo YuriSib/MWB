@@ -13,6 +13,10 @@ main_menu = InlineKeyboardMarkup(inline_keyboard=[
      InlineKeyboardButton(text='Задать категории', callback_data='Категории')]
 ])
 
+back_to_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
+])
+
 personal_cabinet = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
      InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
