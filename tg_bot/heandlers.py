@@ -5,11 +5,14 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from MWB.config import BOT_TOKEN
+# import sys
+# sys.path.append('../')
+
+from config import BOT_TOKEN
 import keyboards as kb
-from MWB.DB import sqlite_comands as sql
 import bot_utilits as ut
-from MWB.parser.scrapper import wb_scrapper
+from DB import sqlite_comands as sql
+from parser.scrapper import wb_scrapper
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -39,7 +42,7 @@ async def personal_cabinet(callback: CallbackQuery, state: FSMContext):
     await state.set_state(UserName.name)
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await callback.answer(f'Ваше имя')
-    await bot.send_message(chat_id=callback.from_user.id, text='Введите ваше имя:')
+    await bot.send_message(chat_id=callback.from_user.id, text='Введите ваше имя:', reply_markup=kb.back_to_menu)
 
 
 @router.message(UserName.name)
@@ -160,8 +163,12 @@ async def get_check(message: Message, state: FSMContext):
 @router.callback_query(lambda callback_query: callback_query.data.startswith('токен_'))
 async def menu(callback: CallbackQuery, bot):
     token_id = int(callback.data.replace('токен_', ''))
+    token_data = await sql.get_token(token_id)
+
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=await kb.key_editor(token_id))
+    await bot.send_message(chat_id=callback.from_user.id,
+                           text=f'Вы выбрали токен {token_data[0]}. Что вы хотите с ним сделать?:',
+                           reply_markup=await kb.key_editor(token_id))
 
 
 class KeyInfo(StatesGroup):
@@ -176,7 +183,8 @@ async def keyword_input(callback: CallbackQuery, state: FSMContext):
     token_id = int(callback.data.replace('Задать_ключ_', ''))
 
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Введите ключевое слово или фразу для поиска:')
+    await bot.send_message(chat_id=callback.from_user.id, text='Введите ключевое слово или фразу для поиска:',
+                           reply_markup=kb.back_to_menu)
 
     await state.update_data(token_id=token_id)
     await state.set_state(KeyInfo.keyword)
@@ -262,6 +270,6 @@ async def menu(callback: CallbackQuery, bot):
 
     await sql.update_parsing_status(callback.from_user.id, True)
     lst_keyword = await sql.get_list_keyword(callback.from_user.id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен',
+                           reply_markup=kb.personal_cabinet)
     await wb_scrapper(lst_keyword, callback.from_user.id)
-
-    await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен', reply_markup=kb.personal_cabinet_2)

@@ -1,7 +1,4 @@
-import sqlite3
-from sqlite3 import Error
-import json
-import os
+from aiosqlite import Error
 from datetime import datetime
 import asyncio
 import aiosqlite
@@ -52,19 +49,47 @@ async def add_product(product_id, reg_time, primary_price):
     await check_db()
     async with aiosqlite.connect('../users.db') as conn:
         cursor = await conn.cursor()
-        await cursor.execute("INSERT INTO products (product_id, reg_time, primary_price) VALUES (?, ?, ?)",
-                             (product_id, reg_time, primary_price))
-        await conn.commit()
-        await conn.close()
+        try:
+            await cursor.execute("INSERT INTO products (product_id, reg_time, primary_price) VALUES (?, ?, ?)",
+                                 (product_id, reg_time, primary_price))
+        except Error as e:
+            print(f"Ошибка при добавлении товара в БД {e}")
+        finally:
+            await conn.commit()
+            await conn.close()
 
 
 async def add_to_favourites(product_id, reg_time, primary_price, call_price):
     await check_db()
     async with aiosqlite.connect('../users.db') as conn:
         cursor = await conn.cursor()
-        await cursor.execute("INSERT INTO favourites_products (product_id, reg_time, primary_price, call_price) "
-                             "VALUES (?, ?, ?, ?)", (product_id, reg_time, primary_price, call_price))
-        await cursor.execute('''DELETE FROM products WHERE id = ?''', (product_id,))
+        try:
+            await cursor.execute("INSERT INTO favourites_products (product_id, reg_time, primary_price, call_price) "
+                                 "VALUES (?, ?, ?, ?)", (product_id, reg_time, primary_price, call_price))
+        except Error as e:
+            print(f"Ошибка при добавлении товара в БД {e} (add_to_favourites)")
+        else:
+            await cursor.execute('''DELETE FROM products WHERE id = ?''', (product_id,))
+            await conn.commit()
+
+
+async def get_favourite_product(product_id):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT * FROM favourites_products WHERE product_id = ?", (product_id,))
+        product = await cursor.fetchone()
+        if product:
+            return product
+        else:
+            return False
+
+
+async def update_favourite_product(product_id, call_price):
+    await check_db()
+    async with aiosqlite.connect('../users.db') as conn:
+        await conn.execute(f"UPDATE favourites_products SET call_price = '{call_price}' WHERE product_id = {product_id}")
+
         await conn.commit()
 
 
@@ -162,11 +187,11 @@ async def get_list_keyword(tg_id):
 
 
 if __name__ == "__main__":
-    product_id_ = 12345
+    product_id_ = 2282783026
     current_time = datetime.now().strftime('%d-%m-%Y')
     tg_id = 674796107
 
-    # asyncio.run(new_field('parsing_status'))
-    print(asyncio.run(get_list_keyword(tg_id)))
+    asyncio.run(add_product(product_id_, current_time, tg_id))
+    # print(asyncio.run(get_list_keyword(tg_id)))
     # # update_product(123456, 170)
     # print(asyncio.run(get_product(product_id_)))

@@ -2,23 +2,23 @@ import aiohttp
 import random
 import json
 
-from MWB.config import PROXY_TOKEN
+from config import PROXY_TOKEN
 
 
 headers = {
     'Accept': '*/*',
-    'Accept-Language': 'ru,en;q=0.9',
+    'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
     'Connection': 'keep-alive',
     'Origin': 'https://www.wildberries.ru',
-    'Referer': 'https://www.wildberries.ru/catalog/0/search.aspx?search=%D0%B3%D0%B5%D0%BD%D0%B5%D1%80%D0%B0%D1%82%D0%BE%D1%80%20%D0%B1%D0%B5%D0%BD%D0%B7%D0%B8%D0%BD%D0%BE%D0%B2%D1%8B%D0%B9',
+    'Referer': 'https://www.wildberries.ru/catalog/0/search.aspx?search=%D0%94%D0%B6%D0%B8%D0%BD%D1%81%D1%8B%20%D1%81%D0%B8%D0%BD%D0%B8%D0%B5',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'cross-site',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 YaBrowser/23.11.0.0 Safari/537.36',
-    'sec-ch-ua': '"Chromium";v="118", "YaBrowser";v="23.11", "Not=A?Brand";v="99", "Yowser";v="2.5"',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'sec-ch-ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Windows"',
-    'x-queryid': 'qid166042518169737901020240607174105',
+    'x-queryid': 'qid912409160171274217320240621105828',
 }
 
 
@@ -30,7 +30,7 @@ async def fetch_data(url):
 
 async def wb_fetch_data(url, proxy):
     async with aiohttp.ClientSession() as session:
-        async with session.get(url=url, proxy=proxy) as response:
+        async with session.get(url=url, proxy=proxy, headers=headers) as response:
             if response.status == 200:
                 response_data = await response.text()
 

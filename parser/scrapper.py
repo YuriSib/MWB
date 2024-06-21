@@ -3,8 +3,14 @@ import random
 import time
 import asyncio
 
-import MWB.parser.utilits as ut
-from MWB.DB import sqlite_comands as sql
+import parser.utilits as ut
+from DB import sqlite_comands as sql
+
+from aiogram import Router, Bot
+from config import BOT_TOKEN
+
+router = Router()
+bot = Bot(BOT_TOKEN)
 
 
 async def wb_scrapper(lst_keyword: list[tuple], user_id):
@@ -69,22 +75,39 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
 
                         if product.get('price'):
                             current_price = float(product['price']['product'])/100
-                            print(f'''{product['name']} {product['id']}''')
                         elif product['sizes'][0].get('price'):
                             current_price = float(product['sizes'][0]['price']['product'])/100
-                            print(f'''{product['name']} {product['id']}''')
                         else:
                             print(f'''Товар: {product['name']} {product['id']} не найден''')
                             continue
 
                         product_data = await sql.get_product(product_id)
+                        favourite_product_data = await sql.get_favourite_product(product_id)
 
                         if product_data:
                             reg_time, primary_price = product_data[1], product_data[2]
                             discount_proc = ((primary_price/current_price)*100)-100
                             if discount_proc >= DISCOUNT_PROC:
+                                await bot.send_message(chat_id=user_id,
+                                                       text=f'''{product['name']} упал в цене. \n
+                                                       Цена при добавлеении в БД - {primary_price}, 
+                                                       текущая цена {current_price}\n
+                                                       https://www.wildberries.ru/catalog/{product_id}/detail.aspx''')
+
                                 await sql.add_to_favourites(product_id=product_id, reg_time=reg_time,
                                                             primary_price=primary_price, call_price=current_price)
+                        elif favourite_product_data:
+                            reg_time, last_price = favourite_product_data[1], favourite_product_data[3]
+                            discount_proc = ((last_price / current_price) * 100) - 100
+                            if discount_proc < 0:
+                                await sql.return_to_prod(product_id, reg_time, last_price)
+                            elif discount_proc > 10:
+                                await sql.update_favourite_product(product_id, current_price)
+                                await bot.send_message(chat_id=user_id,
+                                                       text=f'''{product['name']} снова упал в цене. \n
+                                                       Цена при добавлеении в избранное - {last_price}, 
+                                                       текущая цена {current_price}\n
+                                                       https://www.wildberries.ru/catalog/{product_id}/detail.aspx''')
                         else:
                             await sql.add_product(product_id=product_id, reg_time=current_time,
                                                   primary_price=current_price)
@@ -93,4 +116,5 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
 if __name__ == "__main__":
     lst_keyword = [('Джинсы синие', 30), ('Кабачек', 30)]
     asyncio.run(wb_scrapper(lst_keyword, 674796107))
+    # asyncio.run(bot.send_message(chat_id=674796107, text='{/prod_name} упал в цене. \nЦена при добавлеении в БД - {last_price}'))
 
