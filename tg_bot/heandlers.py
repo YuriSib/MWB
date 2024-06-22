@@ -5,23 +5,25 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-# import sys
-# sys.path.append('../')
+import sys
+sys.path.append('../')
 
 from config import BOT_TOKEN
 import keyboards as kb
 import bot_utilits as ut
 from DB import sqlite_comands as sql
-from parser.scrapper import wb_scrapper
+from parser.scrapper import worker
 
 router = Router()
 bot = Bot(BOT_TOKEN)
+
+MONITORING_FLAG = False
 
 
 @router.message(F.text == '/start')
 async def step1(message: Message):
     if await sql.check_user(message.from_user.id):
-        await message.answer('Выберите подходящий пункт:', reply_markup=kb.main_menu)
+        await message.answer('Выберите подходящий пункт:', reply_markup=await kb.main_menu(message.from_user.id))
     else:
         await message.answer('Вам необходимо загерестрироваться:', reply_markup=kb.registration)
 
@@ -30,7 +32,14 @@ async def step1(message: Message):
 async def personal_cabinet(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
-                           reply_markup=kb.cabinet_keyboard(callback.from_user.id))
+                           reply_markup=await kb.main_menu(callback.from_user.id))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Админка'))
+async def admin_menu(callback: CallbackQuery, bot):
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
+                           reply_markup=kb.admin_menu)
 
 
 class UserName(StatesGroup):
@@ -53,14 +62,14 @@ async def save_name(callback: CallbackQuery, state: FSMContext):
     print("Пользователь зарегестрировался!", callback.from_user.id, callback.chat.full_name)
     await sql.add_user(name, callback.from_user.id)
     await callback.bot.send_message(chat_id=callback.chat.id, text=f'{name}, вы успешно зарегестрировались!',
-                                    reply_markup=kb.main_menu)
+                                    reply_markup=await kb.main_menu(callback.from_user.id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Личный_кабинет'))
 async def personal_cabinet(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
-                           reply_markup=kb.cabinet_keyboard(callback.from_user.id))
+                           reply_markup=kb.personal_cabinet)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Мои_токены'))
@@ -106,7 +115,7 @@ async def tokens(callback: CallbackQuery, bot):
         await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
         await bot.send_message(chat_id=callback.from_user.id,
                                text='В данный момент у вас нет токенов. Нажмите, приобретите один или несколько.',
-                               reply_markup=kb.cabinet_keyboard(callback.from_user.id))
+                               reply_markup=kb.personal_cabinet)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Купить_токены'))
@@ -163,12 +172,21 @@ async def get_check(message: Message, state: FSMContext):
 @router.callback_query(lambda callback_query: callback_query.data.startswith('токен_'))
 async def menu(callback: CallbackQuery, bot):
     token_id = int(callback.data.replace('токен_', ''))
-    token_data = await sql.get_token(token_id)
+    token_data = await sql.get_a_token(token_id)
 
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id,
-                           text=f'Вы выбрали токен {token_data[0]}. Что вы хотите с ним сделать?:',
-                           reply_markup=await kb.key_editor(token_id))
+    print(token_data)
+    if token_data:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=f'Вы выбрали токен {token_data[0][1]}. \n'
+                                    f'Категория - {token_data[0][2]}, Ключевое слово - {token_data[0][3]}, '
+                                    f'снижение цены - {token_data[0][4]}%'
+                                    f'\nЧто вы хотите с ним сделать?:',
+                               reply_markup=await kb.key_editor(token_id))
+    else:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=f'Вы выбрали безымянный токен. Что вы хотите с ним сделать?:',
+                               reply_markup=await kb.key_editor(token_id))
 
 
 class KeyInfo(StatesGroup):
@@ -261,15 +279,28 @@ async def menu(callback: CallbackQuery, bot):
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Ввод_категории'))
 async def menu(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Список категорий', reply_markup=kb.main_menu)
+    await bot.send_message(chat_id=callback.from_user.id, text='Список категорий',
+                           reply_markup=await kb.main_menu(callback.from_user.id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Запустить_мониторинг'))
-async def menu(callback: CallbackQuery, bot):
+async def start_monitoring(callback: CallbackQuery, bot):
+    await sql.update_parsing_status(True)
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-
-    await sql.update_parsing_status(callback.from_user.id, True)
-    lst_keyword = await sql.get_list_keyword(callback.from_user.id)
     await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен',
-                           reply_markup=kb.cabinet_keyboard(callback.from_user.id))
-    await wb_scrapper(lst_keyword, callback.from_user.id)
+                           reply_markup=kb.admin_menu)
+
+    while await sql.get_parsing_status(674796107):
+        user_keys = await sql.get_user_keys()
+
+        semaphore = asyncio.Semaphore(4)
+        tasks = [worker(semaphore, lst_keyword, user_id) for user_id, lst_keyword in user_keys.items()]
+        await asyncio.gather(*tasks)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Остановить_мониторинг'))
+async def stop_monitoring(callback: CallbackQuery, bot):
+    await sql.update_parsing_status(False)
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг остановлен',
+                           reply_markup=kb.admin_menu)

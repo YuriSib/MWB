@@ -8,10 +8,16 @@ registration = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
-main_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Личный кабинет', callback_data='Личный_кабинет')],
-    [InlineKeyboardButton(text='Задать ключи', callback_data='Ключи'),
-     InlineKeyboardButton(text='Задать категории', callback_data='Категории')]
+# main_menu = InlineKeyboardMarkup(inline_keyboard=[
+#     [InlineKeyboardButton(text='Личный кабинет', callback_data='Личный_кабинет')],
+#     [InlineKeyboardButton(text='Задать ключи', callback_data='Ключи'),
+#      InlineKeyboardButton(text='Задать категории', callback_data='Категории')]
+# ])
+
+admin_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Запустить мониторинг', callback_data='Запустить_мониторинг'),
+     InlineKeyboardButton(text='Остановить мониторинг', callback_data='Остановить_мониторинг')],
+    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
 back_to_menu = InlineKeyboardMarkup(inline_keyboard=[
@@ -21,14 +27,14 @@ back_to_menu = InlineKeyboardMarkup(inline_keyboard=[
 personal_cabinet = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
      InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
-    [InlineKeyboardButton(text='Запустить мониторинг по всем ключам', callback_data='Запустить_мониторинг')]
+    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
-personal_cabinet_2 = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
-     InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
-    [InlineKeyboardButton(text='Остановить мониторинг', callback_data='Остановить_мониторинг')]
-])
+# personal_cabinet_2 = InlineKeyboardMarkup(inline_keyboard=[
+#     [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
+#      InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
+#     [InlineKeyboardButton(text='Остановить мониторинг', callback_data='Остановить_мониторинг')]
+# ])
 
 key = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Задать ключ', callback_data='Задать_ключ'),
@@ -59,17 +65,17 @@ percent = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 
-async def cabinet_keyboard(tg_id: int) -> InlineKeyboardMarkup:
-    buttons = [
-        [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
-         InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')]]
-    if sql.get_parsing_status(tg_id):
-        buttons.append([InlineKeyboardButton(text='Остановить мониторинг по всем ключам',
-                                             callback_data='Остановить_мониторинг')])
-    else:
-        buttons.append([InlineKeyboardButton(text='Запустить мониторинг по всем ключам',
-                                             callback_data='Запустить_мониторинг')])
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+# async def cabinet_keyboard(tg_id: int) -> InlineKeyboardMarkup:
+#     buttons = [
+#         [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
+#          InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')]]
+#     if await sql.get_parsing_status(tg_id):
+#         buttons.append([InlineKeyboardButton(text='Остановить мониторинг по всем ключам',
+#                                              callback_data='Остановить_мониторинг')])
+#     else:
+#         buttons.append([InlineKeyboardButton(text='Запустить мониторинг по всем ключам',
+#                                              callback_data='Запустить_мониторинг')])
+#     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 async def token_keyboard(tokens: dict) -> InlineKeyboardMarkup:
@@ -91,3 +97,15 @@ async def key_editor(token_id: int) -> InlineKeyboardMarkup:
     ])
 
     return keyboard
+
+
+async def main_menu(user_id: int) -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text='Личный кабинет', callback_data='Личный_кабинет')],
+        [InlineKeyboardButton(text='Информация', callback_data='Информация')]
+    ]
+
+    if user_id == 674796107:
+        buttons.append([InlineKeyboardButton(text='Админка', callback_data='Админка')])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
