@@ -2,20 +2,25 @@ from datetime import datetime
 import random
 import time
 import asyncio
+import logging
 
 import parser.utilits as ut
 from DB import sqlite_comands as sql
 
 from aiogram import Router, Bot
 from config import BOT_TOKEN
-import logger
+import logger as log
 
 router = Router()
 bot = Bot(BOT_TOKEN)
 
 
+py_logger = logging.getLogger(__name__)
+py_logger.setLevel(logging.INFO)
+
+
 async def wb_scrapper(lst_keyword: list[tuple], user_id):
-    logger.cycle_logger.info(f"Цикл для пользователя {user_id} запущен!")
+    log.cycle_logger.info(f"Цикл для пользователя {user_id} запущен!")
     current_keys_num = 1
     for row in lst_keyword:
         if not await sql.get_parsing_status(user_id):
@@ -100,7 +105,7 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
                         reg_time, primary_price = product_data[1], product_data[2]
                         discount_proc = ((primary_price/current_price)*100)-100
                         if discount_proc >= 20:
-                            logger.cycle_logger.info(f"{product['name']} упал в цене. Скидка: {discount_proc}%.")
+                            log.product_logger.info(f"{product['name']} упал в цене. Скидка: {discount_proc}%.")
                         if discount_proc >= DISCOUNT_PROC:
                             await bot.send_message(chat_id=user_id,
                                                    text=f"{product['name']} упал в цене."

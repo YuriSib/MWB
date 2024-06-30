@@ -3,6 +3,8 @@ from datetime import datetime
 import asyncio
 import aiosqlite
 
+import logger as log
+
 
 async def check_db():
     async with aiosqlite.connect('../users.db') as conn:
@@ -218,8 +220,10 @@ if __name__ == "__main__":
     current_time = datetime.now().strftime('%d-%m-%Y')
     tg_id = 674796107
 
+    log.product_logger.info("Тестирую товары из другого модуля")
+
     # asyncio.run(add_product(product_id_, current_time, tg_id))
     # print(asyncio.run(get_list_keyword(tg_id)))
-    print(asyncio.run(get_user_keys()))
+    # print(asyncio.run(get_user_keys()))
     # # update_product(123456, 170)
     # print(asyncio.run(get_product(product_id_)))

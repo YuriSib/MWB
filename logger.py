@@ -17,24 +17,25 @@ except Exception as E:
     logging.exception(E)
 
 logger = logging.getLogger("test")
-handler = logging.FileHandler('test.log', encoding='utf-8')
+handler = logging.FileHandler('../test.log', encoding='utf-8')
 formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s (Line: %(lineno)d) - [%(filename)s]')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 cycle_logger = logging.getLogger('cycle')
-cycle_handler = logging.FileHandler('история циклов.log', encoding='utf-8')
+cycle_handler = logging.FileHandler('../история циклов.log', encoding='utf-8')
 cycle_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s (Line: %(lineno)d)')
 cycle_handler.setFormatter(cycle_formatter)
 cycle_logger.addHandler(cycle_handler)
 
 product_logger = logging.getLogger('product')
-product_handler = logging.FileHandler('product.log', encoding='utf-8')
-product_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s (Line: %(lineno)d)')
+product_handler = logging.FileHandler('../product.log', encoding='utf-8')
+product_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s')
 product_handler.setFormatter(product_formatter)
 product_logger.addHandler(product_handler)
 
-
-logger.info("Тестирую файл")
-cycle_logger.info("Тестирую цикл")
-product_logger.info("Тестирую товары")
+user_logger = logging.getLogger('users')
+user_handler = logging.FileHandler('../product.log', encoding='utf-8')
+user_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s')
+user_handler.setFormatter(user_formatter)
+user_logger.addHandler(user_handler)

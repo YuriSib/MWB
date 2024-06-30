@@ -13,6 +13,7 @@ import keyboards as kb
 import bot_utilits as ut
 from DB import sqlite_comands as sql
 from parser.scrapper import worker
+import logger as log
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -52,6 +53,7 @@ async def personal_cabinet(callback: CallbackQuery, state: FSMContext):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await callback.answer(f'Ваше имя')
     await bot.send_message(chat_id=callback.from_user.id, text='Введите ваше имя:', reply_markup=kb.back_to_menu)
+    log.user_logger.info(f"Новый пользователь зареган! {callback.from_user.id}: {callback.from_user.username}")
 
 
 @router.message(UserName.name)
@@ -166,6 +168,7 @@ async def get_check(message: Message, state: FSMContext):
     for i in range(3):
         await bot.send_message(chat_id=674796107, text=f'Пользователь оплатил {price}р.!')
         await asyncio.sleep(1)
+    log.user_logger.info(f"Пользователь {message.from_user.id}: {message.from_user.username} купил токен!")
     await bot.send_photo(chat_id=674796107, photo=photo_id)
 
 
@@ -219,6 +222,7 @@ async def keyword_edit(message: Message, state: FSMContext):
     await bot.send_message(chat_id=message.from_user.id,
                            text=f'Ваше новое ключевое слова для этого токена: \n{message.text}.',
                            reply_markup=await kb.key_editor(token_id))
+    log.user_logger.info(f"Пользователь {message.from_user.id}: {message.from_user.username} задал новый ключ!")
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Переименовать_токен_'))
