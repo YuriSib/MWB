@@ -8,12 +8,14 @@ from DB import sqlite_comands as sql
 
 from aiogram import Router, Bot
 from config import BOT_TOKEN
+import logger
 
 router = Router()
 bot = Bot(BOT_TOKEN)
 
 
 async def wb_scrapper(lst_keyword: list[tuple], user_id):
+    logger.cycle_logger.info(f"Цикл для пользователя {user_id} запущен!")
     current_keys_num = 1
     for row in lst_keyword:
         if not await sql.get_parsing_status(user_id):
@@ -84,26 +86,27 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
                     favourite_product_data = await sql.get_favourite_product(product_id, user_id)
 
                     if favourite_product_data:
-                        reg_time, last_price = favourite_product_data[1], favourite_product_data[3]
+                        reg_time, last_price = favourite_product_data[1], favourite_product_data[4]
                         discount_proc = ((last_price / current_price) * 100) - 100
                         if discount_proc < 0:
                             await sql.return_to_prod(product_id, reg_time, last_price)
                         elif discount_proc > 10:
                             await sql.update_favourite_product(product_id, current_price, user_id)
                             await bot.send_message(chat_id=user_id,
-                                                   text=f'''{product['name']} снова упал в цене.
-                                                   Цена при добавлении в избранное - {last_price}, 
-                                                   текущая цена {current_price}\n
-                                                   https://www.wildberries.ru/catalog/{product_id}/detail.aspx''')
+                                                   text=f"{product['name']} снова упал в цене. Цена при добавлении в избранное - {last_price},"
+                                                        f" текущая цена {current_price}\n "
+                                                        f"https://www.wildberries.ru/catalog/{product_id}/detail.aspx")
                     elif product_data:
                         reg_time, primary_price = product_data[1], product_data[2]
                         discount_proc = ((primary_price/current_price)*100)-100
+                        if discount_proc >= 20:
+                            logger.cycle_logger.info(f"{product['name']} упал в цене. Скидка: {discount_proc}%.")
                         if discount_proc >= DISCOUNT_PROC:
                             await bot.send_message(chat_id=user_id,
-                                                   text=f'''{product['name']} упал в цене.
-                                                   Цена при добавлеении в БД - {primary_price} р., 
-                                                   текущая цена {current_price}р.\n
-                                                   https://www.wildberries.ru/catalog/{product_id}/detail.aspx''')
+                                                   text=f"{product['name']} упал в цене."
+                                                        f"Цена при добавлеении в БД - {primary_price} р., "
+                                                        f"текущая цена {current_price}р.\n"
+                                                        f"https://www.wildberries.ru/catalog/{product_id}/detail.aspx")
 
                             await sql.add_to_favourites(product_id=product_id, reg_time=reg_time,
                                                         primary_price=primary_price, call_price=current_price)
