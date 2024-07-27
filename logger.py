@@ -1,41 +1,37 @@
-import logging
+import os
+from loguru import logger
+from notifiers.logging import NotificationHandler
+from dotenv import load_dotenv
+
+from config import BOT_TOKEN
 
 
-logging.basicConfig(level=logging.DEBUG, filename='my_logging.log',
-                    format='%(levelname)s - (%(asctime)s) - %(message)s (Line: %(lineno)d) - [%(filename)s]',
-                    datefmt="%d/%m/%Y %I:%M:%S", encoding="utf-8", filemode="w")
+path_to_logs = fr"/root/BIK_monitoring/logs"
+# path_to_logs = rf"C:\Users\User\PycharmProjects\BIK_monitoring\logs"
 
-logging.debug("Debug")
-logging.info("Info")
-logging.warning("Warning")
-logging.error("Error")
-logging.critical("Critical")
+logger.add(f'{path_to_logs}/log.log', rotation='20 mb', level="DEBUG")
+logger.add(f'{path_to_logs}/info.log', rotation='20 mb', level="INFO")
+logger.add(f'{path_to_logs}/warning.log', rotation='10 mb', level="WARNING")
+logger.add(f'{path_to_logs}/errors.log', rotation='10 mb', level="ERROR")
+logger.add(f'{path_to_logs}/critical.log', rotation='10 mb', level="CRITICAL")
 
-try:
-    10/1
-except Exception as E:
-    logging.exception(E)
 
-logger = logging.getLogger("test")
-handler = logging.FileHandler('../test.log', encoding='utf-8')
-formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s (Line: %(lineno)d) - [%(filename)s]')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+load_dotenv()
 
-cycle_logger = logging.getLogger('cycle')
-cycle_handler = logging.FileHandler('../история циклов.log', encoding='utf-8')
-cycle_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s (Line: %(lineno)d)')
-cycle_handler.setFormatter(cycle_formatter)
-cycle_logger.addHandler(cycle_handler)
+params = {
+    "token": BOT_TOKEN,
+    "chat_id": 674796107,
+}
 
-product_logger = logging.getLogger('product')
-product_handler = logging.FileHandler('../product.log', encoding='utf-8')
-product_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s')
-product_handler.setFormatter(product_formatter)
-product_logger.addHandler(product_handler)
+tg_handler = NotificationHandler(provider='telegram', defaults=params)
+logger.add(tg_handler, level='INFO')
 
-user_logger = logging.getLogger('users')
-user_handler = logging.FileHandler('../product.log', encoding='utf-8')
-user_formatter = logging.Formatter('%(levelname)s - (%(asctime)s) - %(message)s')
-user_handler.setFormatter(user_formatter)
-user_logger.addHandler(user_handler)
+
+if __name__ == "__main__":
+    logger.debug("Уровень Debug")
+    logger.info("Уровень Info")
+    logger.warning("Уровень Warning")
+    logger.error("Уровень Error")
+    logger.critical("Уровень Critical Error")
+
+
