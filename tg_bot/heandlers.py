@@ -31,6 +31,7 @@ async def step1(message: Message):
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Главное_меню'))
 async def personal_cabinet(callback: CallbackQuery, bot):
+    print(callback.message.message_id)
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:',
                            reply_markup=await kb.main_menu(callback.from_user.id))

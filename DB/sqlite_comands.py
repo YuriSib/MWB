@@ -3,7 +3,7 @@ from datetime import datetime
 import asyncio
 import aiosqlite
 
-import logger as log
+import MWB.logger as log
 
 
 async def check_db():

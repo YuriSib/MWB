@@ -4,12 +4,19 @@ import time
 import asyncio
 import logging
 
-import parser.utilits as ut
-from DB import sqlite_comands as sql
+# import parser.utilits as ut
+# from DB import sqlite_comands as sql
+#
+# from aiogram import Router, Bot
+# from config import BOT_TOKEN
+# import logger as log
+
+import MWB.parser.utilits as ut
+from MWB.DB import sqlite_comands as sql
 
 from aiogram import Router, Bot
-from config import BOT_TOKEN
-import logger as log
+from MWB.config import BOT_TOKEN
+import MWB.logger as log
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -20,7 +27,7 @@ py_logger.setLevel(logging.INFO)
 
 
 async def wb_scrapper(lst_keyword: list[tuple], user_id):
-    log.cycle_logger.info(f"Цикл для пользователя {user_id} запущен!")
+    log.info(f"Цикл для пользователя {user_id} запущен!")
     current_keys_num = 1
     for row in lst_keyword:
         if not await sql.get_parsing_status(user_id):
