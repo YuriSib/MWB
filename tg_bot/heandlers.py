@@ -13,6 +13,7 @@ import keyboards as kb
 import bot_utilits as ut
 from DB import sqlite_comands as sql
 from parser.scrapper import worker
+from parser.utilits import get_categories
 import logger as log
 
 router = Router()
@@ -169,7 +170,7 @@ async def get_check(message: Message, state: FSMContext):
     for i in range(3):
         await bot.send_message(chat_id=674796107, text=f'Пользователь оплатил {price}р.!')
         await asyncio.sleep(1)
-    log.user_logger.info(f"Пользователь {message.from_user.id}: {message.from_user.username} купил токен!")
+    log.info(f"Пользователь {message.from_user.id}: {message.from_user.username} купил токен!")
     await bot.send_photo(chat_id=674796107, photo=photo_id)
 
 
@@ -191,6 +192,14 @@ async def menu(callback: CallbackQuery, bot):
         await bot.send_message(chat_id=callback.from_user.id,
                                text=f'Вы выбрали безымянный токен. Что вы хотите с ним сделать?:',
                                reply_markup=await kb.key_editor(token_id))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_категорию_'))
+async def keyword_input(callback: CallbackQuery):
+    categories = await get_categories()
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
+                           reply_markup=await kb.list_to_inline(categories))
 
 
 class KeyInfo(StatesGroup):

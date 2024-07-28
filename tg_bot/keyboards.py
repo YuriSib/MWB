@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from DB import sqlite_comands as sql
+# from DB import sqlite_comands as sql
+from MWB.DB import sqlite_comands as sql
 
 
 registration = InlineKeyboardMarkup(inline_keyboard=[
@@ -53,11 +54,11 @@ pay_tokens = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
-category = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Введите номер категории из списка', callback_data='Ввод_категории')],
-    [InlineKeyboardButton(text='На категорию вверх', callback_data='На_категорию_вверх')],
-    [InlineKeyboardButton(text='Выбрать категорию', callback_data='Выбрать категорию')],
-])
+# category = InlineKeyboardMarkup(inline_keyboard=[
+#     [InlineKeyboardButton(text='Введите номер категории из списка', callback_data='Ввод_категории')],
+#     [InlineKeyboardButton(text='На категорию вверх', callback_data='На_категорию_вверх')],
+#     [InlineKeyboardButton(text='Выбрать категорию', callback_data='Выбрать категорию')],
+# ])
 
 percent = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Укажите процент', callback_data='Укажите_процент')],
@@ -107,5 +108,13 @@ async def main_menu(user_id: int) -> InlineKeyboardMarkup:
 
     if user_id == 674796107:
         buttons.append([InlineKeyboardButton(text='Админка', callback_data='Админка')])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def list_to_inline(categories: list) -> InlineKeyboardMarkup:
+    buttons = []
+    for category in categories:
+        buttons.append([InlineKeyboardButton(text=category, callback_data=category)])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)

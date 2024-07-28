@@ -9,21 +9,17 @@ import logging
 #
 # from aiogram import Router, Bot
 # from config import BOT_TOKEN
-# import logger as log
+# from logger import logger as log
 
 import MWB.parser.utilits as ut
 from MWB.DB import sqlite_comands as sql
 
 from aiogram import Router, Bot
 from MWB.config import BOT_TOKEN
-import MWB.logger as log
+from MWB.logger import logger as log
 
 router = Router()
 bot = Bot(BOT_TOKEN)
-
-
-py_logger = logging.getLogger(__name__)
-py_logger.setLevel(logging.INFO)
 
 
 async def wb_scrapper(lst_keyword: list[tuple], user_id):
@@ -76,7 +72,7 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
                         print(f'В строке data_all = data_all.json() произошла ошибка \n{e}')
                         continue
                 else:
-                    print(f"Код не {200}, подключаюсь через другой прокси! \n "
+                    print(f"Код не 200, подключаюсь через другой прокси! \n "
                           f"текущий прокси:{rand_proxy['http']}")
                     time.sleep(20)
                     continue
@@ -112,7 +108,7 @@ async def wb_scrapper(lst_keyword: list[tuple], user_id):
                         reg_time, primary_price = product_data[1], product_data[2]
                         discount_proc = ((primary_price/current_price)*100)-100
                         if discount_proc >= 20:
-                            log.product_logger.info(f"{product['name']} упал в цене. Скидка: {discount_proc}%.")
+                            log.info(f"{product['name']} упал в цене. Скидка: {discount_proc}%.")
                         if discount_proc >= DISCOUNT_PROC:
                             await bot.send_message(chat_id=user_id,
                                                    text=f"{product['name']} упал в цене."

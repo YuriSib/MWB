@@ -2,7 +2,8 @@ import aiohttp
 import random
 import json
 
-from config import PROXY_TOKEN
+# from config import PROXY_TOKEN
+from MWB.config import PROXY_TOKEN
 
 
 headers = {
@@ -61,3 +62,12 @@ async def random_proxy():
     }
 
     return proxies
+
+
+async def get_categories():
+    url = 'https://static-basket-01.wbbasket.ru/vol0/data/main-menu-ru-ru-v2.json'
+    rand_proxy = await random_proxy()
+    response = await wb_fetch_data(url, rand_proxy['http'])
+
+    categories = [category['name'] for category in response]
+    return categories
