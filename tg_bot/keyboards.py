@@ -112,9 +112,13 @@ async def main_menu(user_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-async def list_to_inline(categories: list) -> InlineKeyboardMarkup:
+async def list_to_inline(lvl: int, categories: list) -> InlineKeyboardMarkup:
     buttons = []
     for category in categories:
-        buttons.append([InlineKeyboardButton(text=category, callback_data=category)])
+        buttons.append([InlineKeyboardButton(text=category, callback_data=f'lvl{lvl}_{category}')])
+    buttons.append([InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')])
+
+    for i in buttons:
+        print(i)
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -194,12 +194,57 @@ async def menu(callback: CallbackQuery, bot):
                                reply_markup=await kb.key_editor(token_id))
 
 
+class CategoryInfo(StatesGroup):
+    catalog_tree = State()
+    lvl_1, lvl_2, lvl_3, lvl_4, lvl_5 = State(), State(), State(), State(), State()
+    lvl_1_id, lvl_2_id, lvl_3_id, lvl_4_id, lvl_5_id = State(), State(), State(), State(), State()
+
+
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_категорию_'))
-async def keyword_input(callback: CallbackQuery):
-    categories = await get_categories()
+async def choice_category(callback: CallbackQuery, state: FSMContext):
+    catalog_tree = await get_categories()
+    await state.update_data(catalog_tree=catalog_tree)
+
+    categories = [category for category in catalog_tree]
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                           reply_markup=await kb.list_to_inline(categories))
+                           reply_markup=await kb.list_to_inline(1, categories))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl1_'))
+async def lvl_1(callback: CallbackQuery, state: FSMContext):
+    lvl_name = callback.data.replace('lvl1_', '')
+    await state.update_data(lvl_1=lvl_name)
+
+    data = await state.get_data()
+    catalog_tree = data['catalog_tree']
+    categories = [category for category in catalog_tree[lvl_name]]
+
+    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+    await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
+                           reply_markup=await kb.list_to_inline(2, categories))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl2_'))
+async def lvl_2(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    catalog_tree = data['catalog_tree']
+    lvl_1 = data['lvl_1']
+    lvl_2 = callback.data.replace('lvl2_', '')
+    await state.update_data(lvl_2=lvl_2)
+
+    category_lvl_1 = catalog_tree[lvl_1]
+    category_lvl_2 = category_lvl_1[lvl_2]
+
+    if type(category_lvl_2) is not str:
+        categories = [category for category in category_lvl_2]
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
+                               reply_markup=await kb.list_to_inline(3, categories))
+    else:
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await bot.send_message(chat_id=callback.from_user.id, text=f'Парсинг по категории {lvl_2} начался!',
+                               reply_markup=kb.personal_cabinet)
 
 
 class KeyInfo(StatesGroup):

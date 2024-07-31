@@ -69,5 +69,20 @@ async def get_categories():
     rand_proxy = await random_proxy()
     response = await wb_fetch_data(url, rand_proxy['http'])
 
-    categories = [category['name'] for category in response]
-    return categories
+    async def recursive_values(category_list: list):
+        catalog = {}
+        for category in category_list:
+            category_name = category['name']
+            if category_name in ['Сертификаты Wildberries', 'Путешествия']:
+                continue
+
+            childs = category.get('childs')
+            if childs:
+                catalog[category_name] = await recursive_values(childs)
+            else:
+                catalog[category_name] = category['url']
+        return catalog
+
+    catalog_tree = await recursive_values(response)
+
+    return catalog_tree
