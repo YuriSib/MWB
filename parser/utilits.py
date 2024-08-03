@@ -66,23 +66,41 @@ async def random_proxy():
 
 async def get_categories():
     url = 'https://static-basket-01.wbbasket.ru/vol0/data/main-menu-ru-ru-v2.json'
+    ID_CATALOG = {}
     rand_proxy = await random_proxy()
     response = await wb_fetch_data(url, rand_proxy['http'])
 
-    async def recursive_values(category_list: list):
+    async def recursive_category_collecting(category_list: list):
         catalog = {}
         for category in category_list:
             category_name = category['name']
+            category_id = category['id']
             if category_name in ['Сертификаты Wildberries', 'Путешествия']:
                 continue
 
             childs = category.get('childs')
             if childs:
-                catalog[category_name] = await recursive_values(childs)
+                catalog[category_id] = await recursive_category_collecting(childs)
             else:
-                catalog[category_name] = category['url']
+                catalog[category_id] = (category['shard'], category['query'])
         return catalog
+    catalog_tree = await recursive_category_collecting(response)
 
-    catalog_tree = await recursive_values(response)
+    async def recursive_id_collecting(category_list: list):
+        for category in category_list:
+            category_name = category['name']
+            category_id = category['id']
+            if category_name in ['Сертификаты Wildberries', 'Путешествия']:
+                continue
 
-    return catalog_tree
+            childs = category.get('childs')
+            if childs:
+                ID_CATALOG[category_id] = category_name
+                await recursive_id_collecting(childs)
+            else:
+                ID_CATALOG[category_id] = category_name
+
+    await recursive_id_collecting(response)
+    id_dict = ID_CATALOG
+
+    return catalog_tree, id_dict

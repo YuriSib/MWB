@@ -14,7 +14,7 @@ import bot_utilits as ut
 from DB import sqlite_comands as sql
 from parser.scrapper import worker
 from parser.utilits import get_categories
-import logger as log
+from logger import logger as log
 
 router = Router()
 bot = Bot(BOT_TOKEN)
@@ -165,7 +165,7 @@ async def get_check(message: Message, state: FSMContext):
                            reply_markup=kb.pay_tokens)
 
     for i in range(1, token_params[0] + 1):
-        await sql.add_token(message.from_user.id, token_params[1])
+        await sql.add_token(message.from_user.id, token_params[1], username=message.from_user.username)
 
     for i in range(3):
         await bot.send_message(chat_id=674796107, text=f'Пользователь оплатил {price}р.!')
@@ -196,55 +196,92 @@ async def menu(callback: CallbackQuery, bot):
 
 class CategoryInfo(StatesGroup):
     catalog_tree = State()
-    lvl_1, lvl_2, lvl_3, lvl_4, lvl_5 = State(), State(), State(), State(), State()
+    id_dict = State()
     lvl_1_id, lvl_2_id, lvl_3_id, lvl_4_id, lvl_5_id = State(), State(), State(), State(), State()
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_категорию_'))
 async def choice_category(callback: CallbackQuery, state: FSMContext):
-    catalog_tree = await get_categories()
+    catalog_tree, id_dict = await get_categories()
     await state.update_data(catalog_tree=catalog_tree)
+    await state.update_data(id_dict=id_dict)
 
-    categories = [category for category in catalog_tree]
+    categories = [id_ for id_ in catalog_tree]
+    category_id = [(id_dict[id_], id_) for id_ in categories]
+
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                           reply_markup=await kb.list_to_inline(1, categories))
+                           reply_markup=await kb.list_to_inline(1, category_id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('lvl1_'))
 async def lvl_1(callback: CallbackQuery, state: FSMContext):
-    lvl_name = callback.data.replace('lvl1_', '')
-    await state.update_data(lvl_1=lvl_name)
-
+    lvl_id = int(callback.data.replace('lvl1_', ''))
     data = await state.get_data()
+
     catalog_tree = data['catalog_tree']
-    categories = [category for category in catalog_tree[lvl_name]]
+    id_dict = data['id_dict']
+
+    categories = [id_ for id_ in catalog_tree[lvl_id]]
+    category_id = [(id_dict[id_], id_) for id_ in categories]
+
+    await state.update_data(lvl_1_id=lvl_id)
 
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                           reply_markup=await kb.list_to_inline(2, categories))
+                           reply_markup=await kb.list_to_inline(2, category_id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('lvl2_'))
 async def lvl_2(callback: CallbackQuery, state: FSMContext):
+    lvl_id = int(callback.data.replace('lvl2_', ''))
+
     data = await state.get_data()
     catalog_tree = data['catalog_tree']
-    lvl_1 = data['lvl_1']
-    lvl_2 = callback.data.replace('lvl2_', '')
-    await state.update_data(lvl_2=lvl_2)
+    id_dict = data['id_dict']
+    lvl_1_id = data['lvl_1_id']
 
-    category_lvl_1 = catalog_tree[lvl_1]
-    category_lvl_2 = category_lvl_1[lvl_2]
+    current_category = catalog_tree[lvl_1_id][lvl_id]
+    if type(current_category) is dict:
+        categories = [id_ for id_ in current_category]
+        category_id = [(id_dict[id_], id_) for id_ in categories]
 
-    if type(category_lvl_2) is not str:
-        categories = [category for category in category_lvl_2]
+        await state.update_data(lvl_2_id=lvl_id)
+
         await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
         await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                               reply_markup=await kb.list_to_inline(3, categories))
-    else:
+                               reply_markup=await kb.list_to_inline(3, category_id))
+
+    elif type(current_category) is str:
         await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-        await bot.send_message(chat_id=callback.from_user.id, text=f'Парсинг по категории {lvl_2} начался!',
-                               reply_markup=kb.personal_cabinet)
+        await bot.send_message(chat_id=callback.from_user.id, text=f'Настроили токен на категорию {id_dict[lvl_id]}',
+                               reply_markup=await kb.key_editor(callback.from_user.id))
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl3_'))
+async def lvl_3(callback: CallbackQuery, state: FSMContext):
+    lvl_id = int(callback.data.replace('lvl3_', ''))
+
+    data = await state.get_data()
+    catalog_tree = data['catalog_tree']
+    id_dict = data['id_dict']
+    lvl_1_id = data['lvl_1_id']
+    lvl_2_id = data['lvl_2_id']
+
+    current_category = catalog_tree[lvl_1_id][lvl_2_id][lvl_id]
+    if type(current_category) is dict:
+        categories = [id_ for id_ in current_category]
+        category_id = [(id_dict[id_], id_) for id_ in categories]
+
+        await state.update_data(lvl_3_id=lvl_id)
+
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
+                               reply_markup=await kb.list_to_inline(4, category_id))
+    elif type(current_category) is str:
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await bot.send_message(chat_id=callback.from_user.id, text=f'Настроили токен на категорию {id_dict[lvl_id]}',
+                               reply_markup=await kb.key_editor(callback.from_user.id))
 
 
 class KeyInfo(StatesGroup):

@@ -4,10 +4,11 @@ import asyncio
 import aiosqlite
 
 import MWB.logger as log
+from MWB.config import PATH_TO_BD
 
 
 async def check_db():
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
         await cursor.execute('''CREATE TABLE IF NOT EXISTS users 
                         (tg_id INTEGER PRIMARY KEY, 
@@ -39,7 +40,7 @@ async def check_db():
 
 async def get_product(product_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT * FROM products WHERE product_id = ?", (product_id,))
         product = await cursor.fetchone()
@@ -51,7 +52,7 @@ async def get_product(product_id):
 
 async def add_product(product_id, reg_time, primary_price):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
         try:
             await cursor.execute("INSERT INTO products (product_id, reg_time, primary_price) VALUES (?, ?, ?)",
@@ -65,7 +66,7 @@ async def add_product(product_id, reg_time, primary_price):
 
 async def add_to_favourites(product_id, reg_time, primary_price, call_price, user_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
         try:
             await cursor.execute("INSERT INTO favourites_products (product_id, reg_time, primary_price, call_price, user_id) "
@@ -79,7 +80,7 @@ async def add_to_favourites(product_id, reg_time, primary_price, call_price, use
 
 async def get_favourite_product(product_id, user_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
         await cursor.execute("SELECT * FROM favourites_products WHERE product_id = ? and user_id = ?",
                              (product_id, user_id))
@@ -92,7 +93,7 @@ async def get_favourite_product(product_id, user_id):
 
 async def update_favourite_product(product_id, call_price, user_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         await conn.execute(f"UPDATE favourites_products SET call_price = '{call_price}' "
                            f"WHERE product_id = {product_id} and user_id = {user_id}")
 
@@ -101,7 +102,7 @@ async def update_favourite_product(product_id, call_price, user_id):
 
 async def return_to_prod(product_id, reg_time, primary_price):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
     await cursor.execute("INSERT INTO products (product_id, reg_time, primary_price) "
                          "VALUES (?, ?, ?)", (product_id, reg_time, primary_price))
@@ -110,14 +111,14 @@ async def return_to_prod(product_id, reg_time, primary_price):
 
 
 async def check_user(tg_id):
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         result = await conn.execute_fetchall("SELECT * FROM users WHERE tg_id = ?", (tg_id,))
     return bool(result)
 
 
 async def add_user(name, tg_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
         time = datetime.now().strftime('%d-%m-%Y')
         await cursor.execute("INSERT INTO users (tg_id, name, reg_time) VALUES (?, ?, ?)", (tg_id, name, time))
@@ -126,29 +127,31 @@ async def add_user(name, tg_id):
 
 async def get_token(tg_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         result = await conn.execute_fetchall("SELECT * FROM keys WHERE user_id = ?", (tg_id,))
         return result
 
 
 async def get_a_token(token_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         result = await conn.execute_fetchall("SELECT * FROM keys WHERE id = ?", (token_id,))
         return result
 
 
 async def delete_token(token_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         await conn.execute('''DELETE FROM keys WHERE id = ?''', (token_id,))
         await conn.commit()
 
 
-async def add_token(user_id, period):
+async def add_token(user_id, period, username):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         time = datetime.now().strftime('%d-%m-%Y')
+        await conn.execute("INSERT OR IGNORE INTO users (tg_id, name, reg_time) VALUES (?, ?, ?)",
+                           (user_id, username, time))
         await conn.execute("INSERT INTO keys (reg_time, subs_period, user_id) VALUES (?, ?, ?)",
                            (time, period, user_id))
         await conn.commit()
@@ -156,7 +159,7 @@ async def add_token(user_id, period):
 
 async def update_key_word_link(token_id, word=None, link=None):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         if word:
             await conn.execute(f"UPDATE keys SET keyword = '{word}' WHERE id = {token_id}")
         else:
@@ -166,42 +169,42 @@ async def update_key_word_link(token_id, word=None, link=None):
 
 async def update_token_name(token_id, name):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         await conn.execute(f"UPDATE keys SET token_name = '{name}' WHERE id = {token_id}")
         await conn.commit()
 
 
 async def update_discount(token_id, discount):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         await conn.execute(f"UPDATE keys SET discount = '{discount}' WHERE id = {token_id}")
         await conn.commit()
 
 
 async def update_parsing_status(status):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         await conn.execute(f"UPDATE users SET parsing_status = ?;", (status,))
         await conn.commit()
 
 
 async def get_parsing_status(tg_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         result = await conn.execute_fetchall("SELECT parsing_status FROM users WHERE tg_id = ?", (tg_id,))
         return result
 
 
 async def get_list_keyword(tg_id):
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         result = await conn.execute_fetchall("SELECT keyword, discount FROM keys WHERE user_id = ?", (tg_id,))
         return result
 
 
 async def get_user_keys():
     await check_db()
-    async with aiosqlite.connect('../users.db') as conn:
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
         user_list = [user[0] for user in await conn.execute_fetchall(f"SELECT tg_id FROM users")]
 
         user_keys = {}
@@ -220,10 +223,10 @@ if __name__ == "__main__":
     current_time = datetime.now().strftime('%d-%m-%Y')
     tg_id = 674796107
 
-    log.product_logger.info("Тестирую товары из другого модуля")
+    # log.product_logger.info("Тестирую товары из другого модуля")
 
     # asyncio.run(add_product(product_id_, current_time, tg_id))
     # print(asyncio.run(get_list_keyword(tg_id)))
-    # print(asyncio.run(get_user_keys()))
+    print(asyncio.run(get_user_keys()))
     # # update_product(123456, 170)
     # print(asyncio.run(get_product(product_id_)))
