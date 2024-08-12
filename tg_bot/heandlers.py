@@ -12,7 +12,7 @@ from config import BOT_TOKEN
 import keyboards as kb
 import bot_utilits as ut
 from DB import sqlite_comands as sql
-from parser.scrapper import worker
+from parser.scrapper import wb_scrapper
 from parser.utilits import get_categories
 from logger import logger as log
 
@@ -194,101 +194,14 @@ async def menu(callback: CallbackQuery, bot):
                                reply_markup=await kb.key_editor(token_id))
 
 
-class CategoryInfo(StatesGroup):
-    catalog_tree = State()
-    id_dict = State()
-    lvl_1_id, lvl_2_id, lvl_3_id, lvl_4_id, lvl_5_id = State(), State(), State(), State(), State()
-
-
-@router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_категорию_'))
-async def choice_category(callback: CallbackQuery, state: FSMContext):
-    catalog_tree, id_dict = await get_categories()
-    await state.update_data(catalog_tree=catalog_tree)
-    await state.update_data(id_dict=id_dict)
-
-    categories = [id_ for id_ in catalog_tree]
-    category_id = [(id_dict[id_], id_) for id_ in categories]
-
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                           reply_markup=await kb.list_to_inline(1, category_id))
-
-
-@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl1_'))
-async def lvl_1(callback: CallbackQuery, state: FSMContext):
-    lvl_id = int(callback.data.replace('lvl1_', ''))
-    data = await state.get_data()
-
-    catalog_tree = data['catalog_tree']
-    id_dict = data['id_dict']
-
-    categories = [id_ for id_ in catalog_tree[lvl_id]]
-    category_id = [(id_dict[id_], id_) for id_ in categories]
-
-    await state.update_data(lvl_1_id=lvl_id)
-
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                           reply_markup=await kb.list_to_inline(2, category_id))
-
-
-@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl2_'))
-async def lvl_2(callback: CallbackQuery, state: FSMContext):
-    lvl_id = int(callback.data.replace('lvl2_', ''))
-
-    data = await state.get_data()
-    catalog_tree = data['catalog_tree']
-    id_dict = data['id_dict']
-    lvl_1_id = data['lvl_1_id']
-
-    current_category = catalog_tree[lvl_1_id][lvl_id]
-    if type(current_category) is dict:
-        categories = [id_ for id_ in current_category]
-        category_id = [(id_dict[id_], id_) for id_ in categories]
-
-        await state.update_data(lvl_2_id=lvl_id)
-
-        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-        await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                               reply_markup=await kb.list_to_inline(3, category_id))
-
-    elif type(current_category) is str:
-        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-        await bot.send_message(chat_id=callback.from_user.id, text=f'Настроили токен на категорию {id_dict[lvl_id]}',
-                               reply_markup=await kb.key_editor(callback.from_user.id))
-
-
-@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl3_'))
-async def lvl_3(callback: CallbackQuery, state: FSMContext):
-    lvl_id = int(callback.data.replace('lvl3_', ''))
-
-    data = await state.get_data()
-    catalog_tree = data['catalog_tree']
-    id_dict = data['id_dict']
-    lvl_1_id = data['lvl_1_id']
-    lvl_2_id = data['lvl_2_id']
-
-    current_category = catalog_tree[lvl_1_id][lvl_2_id][lvl_id]
-    if type(current_category) is dict:
-        categories = [id_ for id_ in current_category]
-        category_id = [(id_dict[id_], id_) for id_ in categories]
-
-        await state.update_data(lvl_3_id=lvl_id)
-
-        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-        await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
-                               reply_markup=await kb.list_to_inline(4, category_id))
-    elif type(current_category) is str:
-        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-        await bot.send_message(chat_id=callback.from_user.id, text=f'Настроили токен на категорию {id_dict[lvl_id]}',
-                               reply_markup=await kb.key_editor(callback.from_user.id))
-
-
 class KeyInfo(StatesGroup):
     keyword = State()
     token_id = State()
     token_name = State()
     discount = State()
+    catalog_tree = State()
+    id_dict = State()
+    lvl_1_id, lvl_2_id, lvl_3_id, lvl_4_id, lvl_5_id = State(), State(), State(), State(), State()
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_ключ_'))
@@ -309,12 +222,13 @@ async def keyword_edit(message: Message, state: FSMContext):
 
     data = await state.get_data()
     token_id = data['token_id']
-    await sql.update_key_word_link(token_id, word=message.text)
+    await sql.update_key(token_id, word=message.text)
 
     await bot.send_message(chat_id=message.from_user.id,
                            text=f'Ваше новое ключевое слова для этого токена: \n{message.text}.',
                            reply_markup=await kb.key_editor(token_id))
-    log.user_logger.info(f"Пользователь {message.from_user.id}: {message.from_user.username} задал новый ключ!")
+    await sql.update_token_name(token_id=token_id, name='Ключ - '+message.text)
+    log.info(f"Пользователь {message.from_user.id}: {message.from_user.username} задал новый ключ!")
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Переименовать_токен_'))
@@ -343,7 +257,7 @@ async def keyword_edit(message: Message, state: FSMContext):
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_скидку_'))
-async def rename_token(callback: CallbackQuery, state: FSMContext):
+async def discount(callback: CallbackQuery, state: FSMContext):
     token_id = int(callback.data.replace('Задать_скидку_', ''))
 
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
@@ -366,17 +280,41 @@ async def keyword_edit(message: Message, state: FSMContext):
                            reply_markup=await kb.key_editor(token_id))
 
 
-@router.callback_query(lambda callback_query: callback_query.data.startswith('Категории'))
-async def menu(callback: CallbackQuery, bot):
+@router.callback_query(lambda callback_query: callback_query.data.startswith('Задать_категорию_'))
+async def choice_category(callback: CallbackQuery, state: FSMContext):
+    token_id = int(callback.data.replace('Задать_категорию_', ''))
+    catalog_tree, id_dict = await get_categories()
+
+    await state.update_data(token_id=token_id)
+    await state.update_data(catalog_tree=catalog_tree)
+    await state.update_data(id_dict=id_dict)
+
+    categories = [id_ for id_ in catalog_tree]
+    category_id = [(id_dict[id_], id_) for id_ in categories]
+
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Выберите подходящий пункт:', reply_markup=kb.category)
+    await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
+                           reply_markup=await kb.list_to_inline(1, category_id))
 
 
-@router.callback_query(lambda callback_query: callback_query.data.startswith('Ввод_категории'))
-async def menu(callback: CallbackQuery, bot):
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await bot.send_message(chat_id=callback.from_user.id, text='Список категорий',
-                           reply_markup=await kb.main_menu(callback.from_user.id))
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl1_'))
+async def lvl_1(callback: CallbackQuery, state: FSMContext):
+    await ut.choice_category_lvl(lvl=1, callback=callback, state=state, bot=bot)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl2_'))
+async def lvl_2(callback: CallbackQuery, state: FSMContext):
+    await ut.choice_category_lvl(lvl=2, callback=callback, state=state, bot=bot)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl3_'))
+async def lvl_3(callback: CallbackQuery, state: FSMContext):
+    await ut.choice_category_lvl(lvl=3, callback=callback, state=state, bot=bot)
+
+
+@router.callback_query(lambda callback_query: callback_query.data.startswith('lvl4_'))
+async def lvl_3(callback: CallbackQuery, state: FSMContext):
+    await ut.choice_category_lvl(lvl=4, callback=callback, state=state, bot=bot)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Запустить_мониторинг'))
@@ -386,12 +324,20 @@ async def start_monitoring(callback: CallbackQuery, bot):
     await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен',
                            reply_markup=kb.admin_menu)
 
-    while await sql.get_parsing_status(674796107):
-        user_keys = await sql.get_user_keys()
+    while True:
+        token_list = await sql.get_tokens()
+        for token in token_list:
+            category, keyword, discount_proc, user_id = token[2], token[3], token[4], token[7]
 
-        semaphore = asyncio.Semaphore(4)
-        tasks = [worker(semaphore, lst_keyword, user_id) for user_id, lst_keyword in user_keys.items()]
-        await asyncio.gather(*tasks)
+            if not discount_proc:
+                continue
+
+            if keyword != '0':
+                await wb_scrapper(user_id, discount_proc, keyword=keyword)
+                log.debug(f'Запустил wb_scrapper для ключа {keyword}, User - {user_id}')
+            else:
+                await wb_scrapper(user_id, discount_proc, category=category)
+                log.debug(f'Запустил wb_scrapper для категории {category}, User - {user_id}')
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Остановить_мониторинг'))

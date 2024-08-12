@@ -4,6 +4,7 @@ import json
 
 # from config import PROXY_TOKEN
 from MWB.config import PROXY_TOKEN
+from MWB.logger import logger
 
 
 headers = {
@@ -39,29 +40,36 @@ async def wb_fetch_data(url, proxy):
 
 
 async def random_proxy():
-    response = await fetch_data(f"https://api.proxy6.net/{PROXY_TOKEN}/getproxy")
-    print(response[1])
-    if response[1] != 200:
-        return response[1]
-    proxy_list = []
-    for item in response[0]['list'].values():
-        if item["ip"] == '194.67.216.135':
+    while True:
+        try:
+            response = await fetch_data(f"https://api.proxy6.net/{PROXY_TOKEN}/getproxy")
+        except Exception as e:
+            logger.error(e)
             continue
-        proxy_list.append({
-            'server': f'{item["ip"]}:{item["port"]}',
-            'username': item['user'],
-            'password': item['pass']
-        })
 
-    rand_proxy = random.choice(proxy_list)
-    proxy = f"http://{rand_proxy['username']}:{rand_proxy['password']}@{rand_proxy['server']}"
+        if response[1] != 200:
+            logger.error(response[1])
+            continue
 
-    proxies = {
-        'http': proxy,
-        'https': proxy
-    }
+        proxy_list = []
+        for item in response[0]['list'].values():
+            if item["ip"] == '194.67.216.135':
+                continue
+            proxy_list.append({
+                'server': f'{item["ip"]}:{item["port"]}',
+                'username': item['user'],
+                'password': item['pass']
+            })
 
-    return proxies
+        rand_proxy = random.choice(proxy_list)
+        proxy = f"http://{rand_proxy['username']}:{rand_proxy['password']}@{rand_proxy['server']}"
+
+        proxies = {
+            'http': proxy,
+            'https': proxy
+        }
+
+        return proxies
 
 
 async def get_categories():
@@ -82,7 +90,9 @@ async def get_categories():
             if childs:
                 catalog[category_id] = await recursive_category_collecting(childs)
             else:
-                catalog[category_id] = (category['shard'], category['query'])
+                query, shard = category.get('query'), category.get('shard')
+                if query and shard:
+                    catalog[category_id] = (query, shard)
         return catalog
     catalog_tree = await recursive_category_collecting(response)
 
@@ -104,3 +114,5 @@ async def get_categories():
     id_dict = ID_CATALOG
 
     return catalog_tree, id_dict
+
+

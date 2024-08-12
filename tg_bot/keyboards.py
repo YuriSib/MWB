@@ -1,6 +1,4 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-# from DB import sqlite_comands as sql
-from MWB.DB import sqlite_comands as sql
 
 
 registration = InlineKeyboardMarkup(inline_keyboard=[
@@ -9,11 +7,6 @@ registration = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
-# main_menu = InlineKeyboardMarkup(inline_keyboard=[
-#     [InlineKeyboardButton(text='Личный кабинет', callback_data='Личный_кабинет')],
-#     [InlineKeyboardButton(text='Задать ключи', callback_data='Ключи'),
-#      InlineKeyboardButton(text='Задать категории', callback_data='Категории')]
-# ])
 
 admin_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Запустить мониторинг', callback_data='Запустить_мониторинг'),
@@ -31,17 +24,12 @@ personal_cabinet = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
-# personal_cabinet_2 = InlineKeyboardMarkup(inline_keyboard=[
-#     [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
-#      InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
-#     [InlineKeyboardButton(text='Остановить мониторинг', callback_data='Остановить_мониторинг')]
-# ])
 
 key = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Задать ключ', callback_data='Задать_ключ'),
      InlineKeyboardButton(text='Задать категорию', callback_data='Задать_категорию')],
     [InlineKeyboardButton(text='Переименовать токен', callback_data='Переименовать_токен')],
-    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
+    [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
 ])
 
 pay_tokens = InlineKeyboardMarkup(inline_keyboard=[
@@ -51,39 +39,21 @@ pay_tokens = InlineKeyboardMarkup(inline_keyboard=[
      InlineKeyboardButton(text='3 токена на 14 дней(100р.)', callback_data='оплатить_3_на_14')],
     [InlineKeyboardButton(text='1 токен на 30 дней(80р.)', callback_data='оплатить_1_на_30'),
      InlineKeyboardButton(text='3 токена на 30 дней(160р.)', callback_data='оплатить_3_на_30')],
-    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
+    [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
 ])
 
-# category = InlineKeyboardMarkup(inline_keyboard=[
-#     [InlineKeyboardButton(text='Введите номер категории из списка', callback_data='Ввод_категории')],
-#     [InlineKeyboardButton(text='На категорию вверх', callback_data='На_категорию_вверх')],
-#     [InlineKeyboardButton(text='Выбрать категорию', callback_data='Выбрать категорию')],
-# ])
 
 percent = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Укажите процент', callback_data='Укажите_процент')],
-    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
+    [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
 ])
-
-
-# async def cabinet_keyboard(tg_id: int) -> InlineKeyboardMarkup:
-#     buttons = [
-#         [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
-#          InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')]]
-#     if await sql.get_parsing_status(tg_id):
-#         buttons.append([InlineKeyboardButton(text='Остановить мониторинг по всем ключам',
-#                                              callback_data='Остановить_мониторинг')])
-#     else:
-#         buttons.append([InlineKeyboardButton(text='Запустить мониторинг по всем ключам',
-#                                              callback_data='Запустить_мониторинг')])
-#     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 async def token_keyboard(tokens: dict) -> InlineKeyboardMarkup:
     row = []
     for id_, name in tokens.items():
         row.append([InlineKeyboardButton(text=name, callback_data=f'токен_{id_}')])
-    row.append([InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')])
+    row.append([InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')])
 
     return InlineKeyboardMarkup(inline_keyboard=row)
 
@@ -94,7 +64,7 @@ async def key_editor(token_id: int) -> InlineKeyboardMarkup:
          InlineKeyboardButton(text='Задать категорию', callback_data=f'Задать_категорию_{token_id}')],
         [InlineKeyboardButton(text='Задать скидку', callback_data=f'Задать_скидку_{token_id}')],
         [InlineKeyboardButton(text='Переименовать токен', callback_data=f'Переименовать_токен_{token_id}')],
-        [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
+        [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
     ])
 
     return keyboard
@@ -116,6 +86,6 @@ async def list_to_inline(lvl: int, categories: list[tuple[str, str]]) -> InlineK
     buttons = []
     for category, id_ in categories:
         buttons.append([InlineKeyboardButton(text=category, callback_data=f'lvl{lvl}_{id_}')])
-    buttons.append([InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')])
+    buttons.append([InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)

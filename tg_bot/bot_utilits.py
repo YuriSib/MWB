@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+from MWB.DB import sqlite_comands as sql
+from MWB.tg_bot import keyboards as kb
 
 
 async def subs_calculation(date, q_day):
@@ -13,6 +15,45 @@ async def subs_calculation(date, q_day):
         return "Подписка истекает сегодня."
     else:
         return "Подписка истекла."
+
+
+async def choice_category_lvl(lvl: int, callback, state, bot):
+    lvl_id = int(callback.data.replace(f'lvl{lvl}_', ''))
+
+    data = await state.get_data()
+    catalog_tree = data['catalog_tree']
+    id_dict = data['id_dict']
+    token_id = data['token_id']
+
+    current_category = 0
+    if lvl == 1:
+        current_category = catalog_tree[lvl_id]
+        await state.update_data(lvl_1_id=lvl_id)
+    elif lvl == 2:
+        lvl_1_id = data['lvl_1_id']
+        current_category = catalog_tree[lvl_1_id][lvl_id]
+        await state.update_data(lvl_2_id=lvl_id)
+    elif lvl == 3:
+        lvl_1_id, lvl_2_id = data['lvl_1_id'], data['lvl_2_id']
+        current_category = catalog_tree[lvl_1_id][lvl_2_id][lvl_id]
+        await state.update_data(lvl_3_id=lvl_id)
+    elif lvl == 4:
+        lvl_1_id, lvl_2_id, lvl_3_id = data['lvl_1_id'], data['lvl_2_id'], data['lvl_3_id']
+        current_category = catalog_tree[lvl_1_id][lvl_2_id][lvl_3_id][lvl_id]
+
+    if type(current_category) is dict:
+        categories = [id_ for id_ in current_category]
+        category_id = [(id_dict[id_], id_) for id_ in categories]
+
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await bot.send_message(chat_id=callback.from_user.id, text='Выберите нужную категорию из списка',
+                               reply_markup=await kb.list_to_inline(lvl + 1, category_id))
+    elif type(current_category) is tuple:
+        await sql.update_key(token_id=token_id, category=current_category)
+        await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
+        await sql.update_token_name(token_id=token_id, name='Категория - '+id_dict[lvl_id])
+        await bot.send_message(chat_id=callback.from_user.id, text=f'Настроили токен на категорию {id_dict[lvl_id]}',
+                               reply_markup=kb.personal_cabinet)
 
 
 if __name__ == "__main__":

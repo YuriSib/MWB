@@ -14,7 +14,7 @@ async def check_db():
                         (tg_id INTEGER PRIMARY KEY, 
                         name TEXT, 
                         reg_time TEXT,
-                        parsing_status BOOL)''')
+                        ban_status BOOL)''')
         await cursor.execute('''CREATE TABLE IF NOT EXISTS products
                         (product_id INTEGER PRIMARY KEY, 
                         reg_time TEXT,
@@ -29,7 +29,7 @@ async def check_db():
         await cursor.execute('''CREATE TABLE IF NOT EXISTS keys
                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
                         token_name TEXT,
-                        key_link TEXT,
+                        key_category TEXT,
                         keyword TEXT,
                         discount INTEGER,
                         reg_time TEXT,
@@ -139,6 +139,13 @@ async def get_a_token(token_id):
         return result
 
 
+async def get_tokens():
+    await check_db()
+    async with aiosqlite.connect(PATH_TO_BD) as conn:
+        result = await conn.execute_fetchall("SELECT * FROM keys")
+        return result
+
+
 async def delete_token(token_id):
     await check_db()
     async with aiosqlite.connect(PATH_TO_BD) as conn:
@@ -157,13 +164,15 @@ async def add_token(user_id, period, username):
         await conn.commit()
 
 
-async def update_key_word_link(token_id, word=None, link=None):
+async def update_key(token_id, word=None, category=None):
     await check_db()
     async with aiosqlite.connect(PATH_TO_BD) as conn:
         if word:
             await conn.execute(f"UPDATE keys SET keyword = '{word}' WHERE id = {token_id}")
+            await conn.execute(f"UPDATE keys SET key_category = '0' WHERE id = {token_id}")
         else:
-            await conn.execute(f"UPDATE keys SET key_link = '{link}' WHERE id = {token_id}")
+            await conn.execute("UPDATE keys SET key_category = ? WHERE id = ?", (str(category), token_id))
+            await conn.execute(f"UPDATE keys SET keyword = '0' WHERE id = {token_id}")
         await conn.commit()
 
 
