@@ -2,9 +2,11 @@ from datetime import datetime, timedelta
 from MWB.DB import sqlite_comands as sql
 from MWB.tg_bot import keyboards as kb
 
+from MWB.logger import logger as log
+
 
 async def subs_calculation(date, q_day):
-    date = datetime.strptime(date, "%d-%m-%Y")
+    date = datetime.strptime(date, "%d-%m-%Y %H:%M:%S")
     date_end = date + timedelta(days=q_day)
     current_date = datetime.now()
     remaining_days = (date_end - current_date).days + 1
@@ -52,8 +54,13 @@ async def choice_category_lvl(lvl: int, callback, state, bot):
         await sql.update_key(token_id=token_id, category=current_category)
         await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
         await sql.update_token_name(token_id=token_id, name='Категория - '+id_dict[lvl_id])
-        await bot.send_message(chat_id=callback.from_user.id, text=f'Настроили токен на категорию {id_dict[lvl_id]}',
-                               reply_markup=kb.personal_cabinet)
+
+        sale_percent = (await sql.get_a_token(token_id))[0][4]
+        if sale_percent:
+            await bot.send_message(chat_id=callback.from_user.id, reply_markup=await kb.key_editor(token_id),
+                                   text=f'Вы настроили токен на категорию {id_dict[lvl_id]}.')
+        else:
+            return id_dict[lvl_id]
 
 
 if __name__ == "__main__":

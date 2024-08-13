@@ -156,7 +156,7 @@ async def delete_token(token_id):
 async def add_token(user_id, period, username):
     await check_db()
     async with aiosqlite.connect(PATH_TO_BD) as conn:
-        time = datetime.now().strftime('%d-%m-%Y')
+        time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         await conn.execute("INSERT OR IGNORE INTO users (tg_id, name, reg_time) VALUES (?, ?, ?)",
                            (user_id, username, time))
         await conn.execute("INSERT INTO keys (reg_time, subs_period, user_id) VALUES (?, ?, ?)",
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     # log.product_logger.info("Тестирую товары из другого модуля")
 
     # asyncio.run(add_product(product_id_, current_time, tg_id))
-    # print(asyncio.run(get_list_keyword(tg_id)))
-    print(asyncio.run(get_user_keys()))
+    print(asyncio.run(get_list_keyword(tg_id)))
+    # print(asyncio.run(get_user_keys()))
     # # update_product(123456, 170)
     # print(asyncio.run(get_product(product_id_)))

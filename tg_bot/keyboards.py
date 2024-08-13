@@ -18,6 +18,10 @@ back_to_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
 ])
 
+back_to_personal_cabinet = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
+])
+
 personal_cabinet = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
      InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
@@ -64,7 +68,7 @@ async def key_editor(token_id: int) -> InlineKeyboardMarkup:
          InlineKeyboardButton(text='Задать категорию', callback_data=f'Задать_категорию_{token_id}')],
         [InlineKeyboardButton(text='Задать скидку', callback_data=f'Задать_скидку_{token_id}')],
         [InlineKeyboardButton(text='Переименовать токен', callback_data=f'Переименовать_токен_{token_id}')],
-        [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
+        [InlineKeyboardButton(text='Назад к списку токенов', callback_data='Мои_токены')]
     ])
 
     return keyboard

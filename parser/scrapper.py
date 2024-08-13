@@ -30,7 +30,6 @@ async def wb_scrapper(user_id, discount, keyword=None, category=None):
         url_ch_1 = 'https://search.wb.ru/'
         url_ch_3 = '&curr=rub&dest=-1255987&sort=popular&spp=30&resultset=catalog&suppressSpellcheck=false'
         if category:
-            category = ast.literal_eval(category)
             url_ch_2 = f"catalog/{category[1]}/v2/catalog?ab_testing=false&appType=1&page={count_page}&{category[0]}"
         else:
             url_ch_2 = f"exactmatch/ru/common/v5/search?ab_testing=false&appType=1&page={count_page}&query={keyword}"

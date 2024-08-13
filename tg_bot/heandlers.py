@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
@@ -182,11 +183,15 @@ async def menu(callback: CallbackQuery, bot):
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     print(token_data)
     if token_data:
+        current_datetime = datetime.now()
+        subs_days = int(token_data[0][6])
+        unformatted_end_datetime = current_datetime + timedelta(days=subs_days)
+        end_datetime = unformatted_end_datetime.strftime("%d-%m-%Y %H:%M:%S")
+
+        sale = f'{token_data[0][4]} %' if token_data[0][4] else 'Не задано'
         await bot.send_message(chat_id=callback.from_user.id,
                                text=f'Вы выбрали токен {token_data[0][1]}. \n'
-                                    f'Категория - {token_data[0][2]}, Ключевое слово - {token_data[0][3]}, '
-                                    f'снижение цены - {token_data[0][4]}%'
-                                    f'\nЧто вы хотите с ним сделать?:',
+                                    f'\n снижение цены - {sale} \n Подписка будет доступна до: {end_datetime}. \n',
                                reply_markup=await kb.key_editor(token_id))
     else:
         await bot.send_message(chat_id=callback.from_user.id,
@@ -210,7 +215,7 @@ async def keyword_input(callback: CallbackQuery, state: FSMContext):
 
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Введите ключевое слово или фразу для поиска:',
-                           reply_markup=kb.back_to_menu)
+                           reply_markup=kb.back_to_personal_cabinet)
 
     await state.update_data(token_id=token_id)
     await state.set_state(KeyInfo.keyword)
@@ -224,9 +229,15 @@ async def keyword_edit(message: Message, state: FSMContext):
     token_id = data['token_id']
     await sql.update_key(token_id, word=message.text)
 
-    await bot.send_message(chat_id=message.from_user.id,
-                           text=f'Ваше новое ключевое слова для этого токена: \n{message.text}.',
-                           reply_markup=await kb.key_editor(token_id))
+    sale_percent = (await sql.get_a_token(token_id))[0][4]
+    if sale_percent:
+        await bot.send_message(chat_id=message.from_user.id, reply_markup=await kb.key_editor(token_id),
+                               text=f'Ваше новое ключевое слова для этого токена: \n{message.text}.')
+    else:
+        await bot.send_message(chat_id=message.from_user.id,
+                               text=f'Ваше новое ключевое слова для этого токена - {message.text}.\n Для начала '
+                                    f'мониторинга введите процент изменения цены, числом без дополнительных знаков:')
+        await state.set_state(KeyInfo.discount)
     await sql.update_token_name(token_id=token_id, name='Ключ - '+message.text)
     log.info(f"Пользователь {message.from_user.id}: {message.from_user.username} задал новый ключ!")
 
@@ -299,22 +310,42 @@ async def choice_category(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('lvl1_'))
 async def lvl_1(callback: CallbackQuery, state: FSMContext):
-    await ut.choice_category_lvl(lvl=1, callback=callback, state=state, bot=bot)
+    category_name = await ut.choice_category_lvl(lvl=1, callback=callback, state=state, bot=bot)
+    if category_name:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=f'Вы настроили токен на категорию - {category_name}.\n Для начала '
+                                    f'мониторинга введите процент изменения цены, числом без дополнительных знаков:')
+        await state.set_state(KeyInfo.discount)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('lvl2_'))
 async def lvl_2(callback: CallbackQuery, state: FSMContext):
-    await ut.choice_category_lvl(lvl=2, callback=callback, state=state, bot=bot)
+    category_name = await ut.choice_category_lvl(lvl=2, callback=callback, state=state, bot=bot)
+    if category_name:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=f'Вы настроили токен на категорию - {category_name}.\n Для начала '
+                                    f'мониторинга введите процент изменения цены, числом без дополнительных знаков:')
+        await state.set_state(KeyInfo.discount)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('lvl3_'))
 async def lvl_3(callback: CallbackQuery, state: FSMContext):
-    await ut.choice_category_lvl(lvl=3, callback=callback, state=state, bot=bot)
+    category_name = await ut.choice_category_lvl(lvl=3, callback=callback, state=state, bot=bot)
+    if category_name:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=f'Вы настроили токен на категорию - {category_name}.\n Для начала '
+                                    f'мониторинга введите процент изменения цены, числом без дополнительных знаков:')
+        await state.set_state(KeyInfo.discount)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('lvl4_'))
 async def lvl_3(callback: CallbackQuery, state: FSMContext):
-    await ut.choice_category_lvl(lvl=4, callback=callback, state=state, bot=bot)
+    category_name = await ut.choice_category_lvl(lvl=4, callback=callback, state=state, bot=bot)
+    if category_name:
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=f'Вы настроили токен на категорию - {category_name}.\n Для начала '
+                                    f'мониторинга введите процент изменения цены, числом без дополнительных знаков:')
+        await state.set_state(KeyInfo.discount)
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Запустить_мониторинг'))
