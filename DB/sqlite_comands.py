@@ -10,32 +10,44 @@ from MWB.config import PATH_TO_BD
 async def check_db():
     async with aiosqlite.connect(PATH_TO_BD) as conn:
         cursor = await conn.cursor()
+        """Создаю модели данных"""
         await cursor.execute('''CREATE TABLE IF NOT EXISTS users 
                         (tg_id INTEGER PRIMARY KEY, 
                         name TEXT, 
                         reg_time TEXT,
                         ban_status BOOL)''')
+
         await cursor.execute('''CREATE TABLE IF NOT EXISTS products
                         (product_id INTEGER PRIMARY KEY, 
                         reg_time TEXT,
                         primary_price INTEGER)''')
-        await cursor.execute('''CREATE TABLE IF NOT EXISTS favourites_products
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        product_id INTEGER, 
-                        reg_time TEXT,
-                        primary_price INTEGER,
-                        call_price INTEGER,
-                        user_id INTEGER)''')
+
+        # await cursor.execute('''CREATE TABLE IF NOT EXISTS favourites_products
+        #                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+        #                 product_id INTEGER,
+        #                 reg_time TEXT,
+        #                 primary_price INTEGER,
+        #                 call_price INTEGER,
+        #                 user_id INTEGER)''')
+
         await cursor.execute('''CREATE TABLE IF NOT EXISTS keys
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        token_name TEXT,
-                        key_category TEXT,
-                        keyword TEXT,
-                        discount INTEGER,
-                        reg_time TEXT,
-                        subs_period TEXT,
-                        user_id INTEGER,
-                        FOREIGN KEY (user_id) REFERENCES users(tg_id))''')
+                                (key_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                token_name TEXT,
+                                key_category TEXT,
+                                keyword TEXT,
+                                discount INTEGER,
+                                reg_time TEXT,
+                                subs_period TEXT,
+                                user_id INTEGER,
+                                FOREIGN KEY (user_id) REFERENCES users(tg_id))''')
+
+        await cursor.execute('''CREATE TABLE IF NOT EXISTS product_key
+                                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                product_id INTEGER,
+                                key_id INTEGER,
+                                favourites INTEGER DEFAULT 0,
+                                FOREIGN KEY (product_id) REFERENCES products(product_id),
+                                FOREIGN KEY (key_id) REFERENCES products(key_id))''')
 
 
 async def get_product(product_id):
@@ -190,11 +202,11 @@ async def update_discount(token_id, discount):
         await conn.commit()
 
 
-async def update_parsing_status(status):
-    await check_db()
-    async with aiosqlite.connect(PATH_TO_BD) as conn:
-        await conn.execute(f"UPDATE users SET parsing_status = ?;", (status,))
-        await conn.commit()
+# async def update_parsing_status(status):
+#     await check_db()
+#     async with aiosqlite.connect(PATH_TO_BD) as conn:
+#         await conn.execute(f"UPDATE users SET parsing_status = ?;", (status,))
+#         await conn.commit()
 
 
 async def get_parsing_status(tg_id):

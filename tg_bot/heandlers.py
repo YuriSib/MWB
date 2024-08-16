@@ -350,7 +350,7 @@ async def lvl_3(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Запустить_мониторинг'))
 async def start_monitoring(callback: CallbackQuery, bot):
-    await sql.update_parsing_status(True)
+    # await sql.update_parsing_status(True)
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен',
                            reply_markup=kb.admin_menu)
@@ -373,7 +373,7 @@ async def start_monitoring(callback: CallbackQuery, bot):
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Остановить_мониторинг'))
 async def stop_monitoring(callback: CallbackQuery, bot):
-    await sql.update_parsing_status(False)
+    # await sql.update_parsing_status(False)
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг остановлен',
                            reply_markup=kb.admin_menu)

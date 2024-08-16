@@ -30,7 +30,7 @@ async def wb_scrapper(user_id, discount, keyword=None, category=None):
         url_ch_1 = 'https://search.wb.ru/'
         url_ch_3 = '&curr=rub&dest=-1255987&sort=popular&spp=30&resultset=catalog&suppressSpellcheck=false'
         if category:
-            url_ch_2 = f"catalog/{category[1]}/v2/catalog?ab_testing=false&appType=1&page={count_page}&{category[0]}"
+            url_ch_2 = f"catalog/{eval(category)[1]}/v2/catalog?ab_testing=false&appType=1&page={count_page}&{eval(category)[0]}"
         else:
             url_ch_2 = f"exactmatch/ru/common/v5/search?ab_testing=false&appType=1&page={count_page}&query={keyword}"
 
@@ -59,15 +59,15 @@ async def wb_scrapper(user_id, discount, keyword=None, category=None):
 
             for product in data_all:
                 current_time = datetime.now().strftime('%d-%m-%Y')
-
+                """ID товара"""
                 product_id = product['id']
-
+                """Стоимость товара"""
                 if product.get('price'):
                     current_price = float(product['price']['product'])/100
                 elif product['sizes'][0].get('price'):
                     current_price = float(product['sizes'][0]['price']['product'])/100
                 else:
-                    print(f'''Товар: {product['name']} {product['id']} не найден''')
+                    log.info(f'''Товар: {product['name']} {product['id']} не найден''')
                     continue
 
                 product_data = await sql.get_product(product_id)
