@@ -1,13 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-registration = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Зарегистрироваться', callback_data='Регистрация'),
-     InlineKeyboardButton(text='Справка', callback_data='Справка')],
-    [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
-])
-
-
 admin_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Запустить мониторинг', callback_data='Запустить_мониторинг'),
      InlineKeyboardButton(text='Остановить мониторинг', callback_data='Остановить_мониторинг')],
@@ -26,14 +19,6 @@ personal_cabinet = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Мои токены', callback_data='Мои_токены'),
      InlineKeyboardButton(text='Купить токены', callback_data='Купить_токены')],
     [InlineKeyboardButton(text='Назад в главное меню', callback_data='Главное_меню')]
-])
-
-
-key = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Задать ключ', callback_data='Задать_ключ'),
-     InlineKeyboardButton(text='Задать категорию', callback_data='Задать_категорию')],
-    [InlineKeyboardButton(text='Переименовать токен', callback_data='Переименовать_токен')],
-    [InlineKeyboardButton(text='Назад в личный кабинет', callback_data='Личный_кабинет')]
 ])
 
 pay_tokens = InlineKeyboardMarkup(inline_keyboard=[

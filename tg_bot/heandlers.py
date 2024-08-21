@@ -25,10 +25,9 @@ MONITORING_FLAG = False
 
 @router.message(F.text == '/start')
 async def step1(message: Message):
-    if await sql.check_user(message.from_user.id):
-        await message.answer('Выберите подходящий пункт:', reply_markup=await kb.main_menu(message.from_user.id))
-    else:
-        await message.answer('Вам необходимо загерестрироваться:', reply_markup=kb.registration)
+    if not await sql.check_user(message.from_user.id):
+        await sql.add_user(message.from_user.username, message.from_user.id)
+    await message.answer('Выберите подходящий пункт:', reply_markup=await kb.main_menu(message.from_user.id))
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Главное_меню'))
@@ -48,15 +47,6 @@ async def admin_menu(callback: CallbackQuery, bot):
 
 class UserName(StatesGroup):
     name = State()
-
-
-@router.callback_query(lambda callback_query: callback_query.data.startswith('Регистрация'))
-async def personal_cabinet(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(UserName.name)
-    await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
-    await callback.answer(f'Ваше имя')
-    await bot.send_message(chat_id=callback.from_user.id, text='Введите ваше имя:', reply_markup=kb.back_to_menu)
-    log.user_logger.info(f"Новый пользователь зареган! {callback.from_user.id}: {callback.from_user.username}")
 
 
 @router.message(UserName.name)
@@ -163,7 +153,7 @@ async def get_check(message: Message, state: FSMContext):
 
     await bot.send_message(chat_id=message.from_user.id,
                            text=f'Вы оплатили {q_t} токен(ов) на {q_d} дней!',
-                           reply_markup=kb.pay_tokens)
+                           reply_markup=kb.personal_cabinet)
 
     for i in range(1, token_params[0] + 1):
         await sql.add_token(message.from_user.id, token_params[1], username=message.from_user.username)
@@ -350,25 +340,26 @@ async def lvl_3(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Запустить_мониторинг'))
 async def start_monitoring(callback: CallbackQuery, bot):
-    # await sql.update_parsing_status(True)
     await bot.delete_message(chat_id=callback.from_user.id, message_id=callback.message.message_id)
     await bot.send_message(chat_id=callback.from_user.id, text='Мониторинг запущен',
                            reply_markup=kb.admin_menu)
+    log.warning('Мониторинг запущен')
 
     while True:
         token_list = await sql.get_tokens()
         for token in token_list:
-            category, keyword, discount_proc, user_id = token[2], token[3], token[4], token[7]
+            key_id, category, keyword, discount_proc, user_id = token[0], token[2], token[3], token[4], token[7]
+            key = (key_id, category, keyword, discount_proc, user_id)
 
+            if not category or not keyword:
+                continue
             if not discount_proc:
                 continue
 
-            if keyword != '0':
-                await wb_scrapper(user_id, discount_proc, keyword=keyword)
-                log.debug(f'Запустил wb_scrapper для ключа {keyword}, User - {user_id}')
-            else:
-                await wb_scrapper(user_id, discount_proc, category=category)
-                log.debug(f'Запустил wb_scrapper для категории {category}, User - {user_id}')
+            try:
+                await wb_scrapper(discount_proc, key=key)
+            except Exception as e:
+                log.error(f"Ошибка в функции wb_scrapper:\n {e}")
 
 
 @router.callback_query(lambda callback_query: callback_query.data.startswith('Остановить_мониторинг'))

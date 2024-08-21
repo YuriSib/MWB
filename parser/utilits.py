@@ -3,6 +3,8 @@ import random
 import json
 
 # from config import PROXY_TOKEN
+# from logger import logger
+
 from MWB.config import PROXY_TOKEN
 from MWB.logger import logger
 

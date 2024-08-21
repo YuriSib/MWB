@@ -3,11 +3,13 @@ from loguru import logger
 # from notifiers.logging import NotificationHandler
 # from dotenv import load_dotenv
 
-from MWB.config import BOT_TOKEN
+from config import BOT_TOKEN
+
+# from MWB.config import BOT_TOKEN
 
 
-# path_to_logs = fr"/root/BIK_monitoring/logs"
-path_to_logs = rf"C:\Users\User\PycharmProjects\MWB\logs"
+path_to_logs = fr"/root/MWB_monitor/logs"
+# path_to_logs = rf"C:\Users\User\PycharmProjects\MWB\logs"
 
 logger.add(f'{path_to_logs}/log.log', rotation='20 mb', level="DEBUG")
 logger.add(f'{path_to_logs}/info.log', rotation='20 mb', level="INFO")
